@@ -1,10 +1,10 @@
+import sys
 import itertools
-import matplotlib.pyplot as plt
-import pprint
 import random
 import string
 from collections import defaultdict
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pydot
@@ -14,8 +14,6 @@ from bitarray import bitarray
 QUESTIONS = 4
 RESPONSE_PATTERNS_SUPERSET = {''.join(sequence)
                               for sequence in itertools.product('01', repeat=QUESTIONS)}
-
-# random.seed(23)
 
 
 class KnowledgeState:
@@ -61,13 +59,16 @@ def discrepancy(response_patterns, ks, members):
     return total
 
 
-def partition(response_patterns, centroids, default_states):
+def partition(response_patterns, centroids, default_states, update=True):
     members = defaultdict(list)
 
     for response_pattern in response_patterns:
         centroid = min(centroids, key=lambda centroid: sum(
             bitarray(centroid) ^ bitarray(response_pattern)))
         members[centroid].append(response_pattern)
+
+    if not update:
+        return centroids, members
 
     # Centroids update
     new_centroids = []
@@ -104,7 +105,6 @@ def main():
         for _, *response in data.itertuples()
     ]
 
-    superset = RESPONSE_PATTERNS_SUPERSET.copy()
     knowledge_structures = []
 
     empty_state = '0' * QUESTIONS
@@ -112,65 +112,73 @@ def main():
     default_states = {empty_state, full_state}
 
     centroids = default_states.copy()
-    discrepancies = []
+    discrepancies = [float('inf')]
+    discrepancy_tolerance = 1
 
     while True:
         centroids, members = partition(response_patterns, centroids, default_states)
 
         disc = discrepancy(RESPONSE_PATTERNS_SUPERSET, centroids, members)
-        discrepancies.append(disc)
-        knowledge_structures.append((centroids, disc))
-        print(discrepancies[-2:])
+        print('disc %d' % disc)
 
-        if disc == 0:
-            print('\nDiscrepancy: %d\n' % disc)
+        if disc >= discrepancies[-1]:
+            discrepancy_tolerance -= 1
+
+        if discrepancy_tolerance == 0:
+            print('\nDiscrepancy not improved for {} iters'.format(discrepancy_tolerance))
             break
 
-        # New random unseen knowledge state
+        discrepancies.append(disc)
+        knowledge_structures.append((centroids, disc))
+
+        if disc == 0:
+            break
+
         candidates = RESPONSE_PATTERNS_SUPERSET.difference(centroids)
 
         if not candidates:
-            print('\nDiscrepancy: %d\n' % disc)
             break
 
         # Random sampling
         # [new_state] = random.sample(candidates, 1)
 
         # Optimal knowledge state
-        # discs = [
-        #     (state, discrepancy(RESPONSE_PATTERNS_SUPERSET,
-        #                         centroids | {state},
-        #                         members))
-        #     for state in candidates
-        # ]
-
         discs = []
         for state in candidates:
             new_ks = centroids | {state}
-            _, membership = partition(response_patterns, new_ks, default_states)
+            _, membership = partition(response_patterns, new_ks,
+                                      default_states, update=False)
             new_disc = discrepancy(RESPONSE_PATTERNS_SUPERSET, new_ks, membership)
             discs.append((state, new_disc))
 
-        new_state, imprv = max(discs, key=lambda x: disc - x[1])
-
+        new_state, _ = max(discs, key=lambda x: disc - x[1])
         centroids.add(new_state)
 
+    print('\nDiscrepancy: %d\n' % discrepancies[-1])
+
     violations = 0
-    for s, t in itertools.product(centroids, centroids):
+    for s, t in itertools.combinations(centroids, r=2):
         union = bitarray(s) | bitarray(t)
         union_str = ''.join([str(int(i)) for i in union.tolist()])
         if union_str not in centroids:
+            print(s, t)
             violations += 1
             centroids.add(union_str)
 
-    sorted_ks = sorted(centroids, key=lambda c: sum(bitarray(c)))
+    _, membership = partition(response_patterns, centroids,
+                              default_states, update=False)
+
+    new_disc = discrepancy(RESPONSE_PATTERNS_SUPERSET, centroids, membership)
+    print('\nNew Discrepancy %d' % new_disc)
+
+    final_structure = centroids
+    sorted_ks = sorted(final_structure, key=lambda c: sum(bitarray(c)))
 
     print('\nKS size: %d' % len(sorted_ks))
     print('Iters: %d' % len(knowledge_structures))
     print('Violations %d\n' % violations)
 
     show_knowledge_structure(sorted_ks)
-    # plot_ks_size(knowledge_structures)
 
 
 def plot_ks_size(knowledge_structures):
@@ -208,4 +216,6 @@ def show_knowledge_structure(ks):
 
 
 if __name__ == '__main__':
+    seed = sys.argv[1] if len(sys.argv) == 2 else 42
+    random.seed(seed)
     main()
