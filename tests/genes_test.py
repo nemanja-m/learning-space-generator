@@ -1,5 +1,7 @@
-import pytest
 import random
+
+import pytest
+
 from lsg.genes import KnowledgeStateGene, KnowledgeStateConnectionGene
 from lsg.structures import KnowledgeState
 
@@ -8,6 +10,11 @@ class TestKnowledgeStateGene:
 
     def setup(self):
         self.gene = KnowledgeStateGene(key=42, state=KnowledgeState('101'))
+
+    def test_init(self):
+        with pytest.raises(AssertionError) as e:
+            KnowledgeStateGene(key='key', state='101')
+            assert e.value.message == 'KnowledgeStateGene key must be a int.'
 
     def test_distance(self):
         other = KnowledgeStateGene(key=43, state=KnowledgeState('010'))
@@ -45,10 +52,15 @@ class TestKnowledgeStateGene:
 class TestKnowledgeStateConnectionGene:
 
     def setup(self):
-        self.gene = KnowledgeStateConnectionGene(key=42)
+        self.gene = KnowledgeStateConnectionGene(key=(43, 23))
+
+    def test_init(self):
+        with pytest.raises(AssertionError) as e:
+            KnowledgeStateConnectionGene(key='key')
+            assert e.value.message == 'ConnectionGene key must be a tuple.'
 
     def test_distance(self):
-        other = KnowledgeStateConnectionGene(key=23)
+        other = KnowledgeStateConnectionGene(key=(23, 43))
         assert other.distance(self.gene) == 0
         assert self.gene.distance(other) == 0
 
@@ -61,7 +73,7 @@ class TestKnowledgeStateConnectionGene:
         other = KnowledgeStateConnectionGene(key=self.gene.key)
         assert self.gene.crossover(other) == self.gene
 
-        other = KnowledgeStateConnectionGene(key=self.gene.key + 1)
+        other = KnowledgeStateConnectionGene(key=(1, 0))
         with pytest.raises(AssertionError) as e:
             self.gene.crossover(other)
             assert e.value.message == 'Gene keys must be same.'

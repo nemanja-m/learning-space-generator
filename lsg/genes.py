@@ -1,4 +1,5 @@
 from random import random
+from typing import Tuple
 
 from .structures import KnowledgeState
 
@@ -36,6 +37,7 @@ class Gene:
 class KnowledgeStateGene(Gene):
 
     def __init__(self, key: int, state: KnowledgeState):
+        assert isinstance(key, int), 'KnowledgeStateGene key must be a int.'
         super().__init__(key)
         self._knowledge_state = state
 
@@ -55,7 +57,8 @@ class KnowledgeStateGene(Gene):
 
 class KnowledgeStateConnectionGene(Gene):
 
-    def __init__(self, key: int):
+    def __init__(self, key: Tuple[int, int]):
+        assert isinstance(key, tuple), 'ConnectionGene key must be a tuple.'
         super().__init__(key)
 
     def distance(self, other) -> int:
