@@ -49,6 +49,24 @@ class TestKnowledgeState:
         p = KnowledgeState('011')
         assert (s ^ p) == KnowledgeState('110')
 
+    def test_sub(self):
+        s = KnowledgeState('101')
+        p = KnowledgeState('011')
+        assert (s - p) == KnowledgeState('100')
+
+    def test_distance(self):
+        s = KnowledgeState('101')
+        p = KnowledgeState('011')
+        assert s.distance(p) == 2
+
+        s = KnowledgeState('101')
+        p = KnowledgeState('101')
+        assert s.distance(p) == 0
+
+        s = KnowledgeState('111')
+        p = KnowledgeState('000')
+        assert s.distance(p) == 3
+
 
 class TestTrivialLearningSpace:
 

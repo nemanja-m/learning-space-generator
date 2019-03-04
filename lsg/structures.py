@@ -15,22 +15,30 @@ class KnowledgeState:
     def __init__(self, iterable: Iterable):
         self._bitarray = bitarray(iterable)
 
+    def distance(self, other: 'KnowledgeState') -> int:
+        diff = (self - other) | (other - self)
+        return sum(diff._bitarray)
+
     def __hash__(self):
         return self._bitarray.tobytes().__hash__()
 
-    def __eq__(self, other):
+    def __eq__(self, other: 'KnowledgeState') -> bool:
         return self._bitarray == other._bitarray
 
-    def __or__(self, other):
+    def __or__(self, other: 'KnowledgeState') -> 'KnowledgeState':
         result = self._bitarray | other._bitarray
         return KnowledgeState(result)
 
-    def __and__(self, other):
+    def __and__(self, other: 'KnowledgeState') -> 'KnowledgeState':
         result = self._bitarray & other._bitarray
         return KnowledgeState(result)
 
-    def __xor__(self, other):
+    def __xor__(self, other: 'KnowledgeState') -> 'KnowledgeState':
         result = self._bitarray ^ other._bitarray
+        return KnowledgeState(result)
+
+    def __sub__(self, other: 'KnowledgeState') -> 'KnowledgeState':
+        result = self._bitarray & ~other._bitarray
         return KnowledgeState(result)
 
     def __str__(self):
