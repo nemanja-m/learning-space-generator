@@ -1,25 +1,13 @@
 from random import random
 from typing import Tuple
 
-from .structures import KnowledgeState
+from .structure import KnowledgeState
 
 
 class Gene:
 
     def __init__(self, key):
         self.key = key
-
-    def __lt__(self, other: 'Gene') -> int:
-        return self.key < other.key
-
-    def __le__(self, other: 'Gene') -> int:
-        return self.key <= other.key
-
-    def __gt__(self, other: 'Gene') -> int:
-        return self.key > other.key
-
-    def __ge__(self, other: 'Gene') -> int:
-        return self.key >= other.key
 
     def __eq__(self, other: 'Gene') -> int:
         return self.key == other.key
@@ -36,8 +24,8 @@ class Gene:
 
 class KnowledgeStateGene(Gene):
 
-    def __init__(self, key: int, state: KnowledgeState):
-        assert isinstance(key, int), 'KnowledgeStateGene key must be a int.'
+    def __init__(self, state: KnowledgeState):
+        key = state.to_bitstring()
         super().__init__(key)
         self._knowledge_state = state
 
@@ -45,20 +33,19 @@ class KnowledgeStateGene(Gene):
         return self._knowledge_state.distance(other._knowledge_state)
 
     def copy(self) -> Gene:
-        return KnowledgeStateGene(key=self.key, state=self._knowledge_state)
+        return KnowledgeStateGene(state=self._knowledge_state)
 
     def crossover(self, other: 'KnowledgeStateGene') -> Gene:
         assert self.key == other.key, 'Gene keys must be same.'
 
         # Inherit attributes from random parent.
         state = self._knowledge_state if random() > 0.5 else other._knowledge_state
-        return KnowledgeStateGene(key=self.key, state=state)
+        return KnowledgeStateGene(state=state)
 
 
 class KnowledgeStateConnectionGene(Gene):
 
-    def __init__(self, key: Tuple[int, int]):
-        assert isinstance(key, tuple), 'ConnectionGene key must be a tuple.'
+    def __init__(self, key: Tuple[str, str]):
         super().__init__(key)
 
     def distance(self, other) -> int:

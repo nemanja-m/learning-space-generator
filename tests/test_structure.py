@@ -2,7 +2,7 @@ import itertools
 
 import pytest
 
-from lsg.structures import KnowledgeState, TrivialLearningSpace
+from lsg.structure import KnowledgeState, TrivialLearningSpace
 
 
 class TestKnowledgeState:
@@ -66,6 +66,10 @@ class TestKnowledgeState:
         s = KnowledgeState('111')
         p = KnowledgeState('000')
         assert s.distance(p) == 3
+
+    def test_to_bitstring(self):
+        state = KnowledgeState('101')
+        assert state.to_bitstring() == '101'
 
 
 class TestTrivialLearningSpace:

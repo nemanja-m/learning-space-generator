@@ -19,6 +19,9 @@ class KnowledgeState:
         diff = (self - other) | (other - self)
         return sum(diff._bitarray)
 
+    def to_bitstring(self) -> str:
+        return self._bitarray.to01()
+
     def __hash__(self):
         return self._bitarray.tobytes().__hash__()
 
@@ -42,7 +45,7 @@ class KnowledgeState:
         return KnowledgeState(result)
 
     def __str__(self):
-        state_str = self._bitarray.to01()
+        state_str = self.to_bitstring()
         if int(state_str) == 0:
             return self.EMPTY_STATE_SYMBOL
 
