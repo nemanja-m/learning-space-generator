@@ -22,18 +22,24 @@ class TestKnowledgeStateGene:
     def test_copy(self):
         copy_gene = self.gene.copy()
         assert copy_gene.key == self.gene.key
-        assert copy_gene._knowledge_state == self.gene._knowledge_state
+        assert copy_gene.knowledge_state == self.gene.knowledge_state
         assert id(copy_gene) != id(self.gene)
 
     def test_crossover(self):
-        other = KnowledgeStateGene(state=self.gene._knowledge_state)
+        other = KnowledgeStateGene(state=self.gene.knowledge_state)
         random.seed(42)
-        assert self.gene.crossover(other)._knowledge_state == self.gene._knowledge_state
+        assert self.gene.crossover(other).knowledge_state == self.gene.knowledge_state
 
         other = KnowledgeStateGene(state=KnowledgeState('010'))
         with pytest.raises(AssertionError) as e:
             self.gene.crossover(other)
             assert e.value.message == 'Gene keys must be same.'
+
+    def test_mutate(self):
+        gene = KnowledgeStateGene(state=KnowledgeState('10000'))
+        random.seed(23)
+        mutated_gene = gene.mutate()
+        assert mutated_gene.knowledge_state.to_bitstring() == '10100'
 
 
 class TestKnowledgeStateConnectionGene:

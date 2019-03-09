@@ -55,6 +55,9 @@ class KnowledgeState:
             if bit == '1'
         ]) + '}'
 
+    def __repr__(self):
+        return str(self)
+
 
 class TrivialLearningSpace:
 

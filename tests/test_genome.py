@@ -1,4 +1,6 @@
+from lsg.gene import KnowledgeStateGene
 from lsg.genome import LearningSpaceGenome, LearningSpaceGenomeConfig
+from lsg.structure import KnowledgeState
 
 
 class TestLearningSpaceGenome:
@@ -37,6 +39,24 @@ class TestLearningSpaceGenome:
         # self.genome is more fit than self.other
         assert all(node_key in new_genome.nodes for node_key in self.genome.nodes)
 
+    def test_mutate(self):
+        self.genome.mutate()
+        assert len(self.genome.nodes) >= 2
+
+    def test_ensure_closure_under_union(self):
+        genome = LearningSpaceGenome(key=0)
+        genome._add_node(knowledge_state=KnowledgeState('000'))
+        genome._add_node(knowledge_state=KnowledgeState('100'))
+        gene = KnowledgeStateGene(state=KnowledgeState('010'))
+        genome._ensure_closure_under_union(gene)
+        assert '110' in genome.nodes
+
+        gene = KnowledgeStateGene(state=KnowledgeState('001'))
+        genome._ensure_closure_under_union(gene)
+        assert '011' in genome.nodes
+        assert '101' in genome.nodes
+        assert '111' in genome.nodes
+
     def test_distance(self):
         assert self.genome.distance(self.other) == 2 + 1
 
@@ -46,6 +66,5 @@ class TestLearningSpaceGenome:
     def test_eq(self):
         assert self.genome != self.other
 
-        new_genome = LearningSpaceGenome(key=0)
-        new_genome.nodes = self.genome.nodes
+        new_genome = LearningSpaceGenome(key=self.genome.key)
         assert new_genome == self.genome
