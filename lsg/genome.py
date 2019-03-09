@@ -1,7 +1,8 @@
 import random
+from typing import List
 
 from .gene import KnowledgeStateGene, KnowledgeStateConnectionGene
-from .structure import TrivialLearningSpace
+from .structure import TrivialLearningSpace, KnowledgeState
 
 
 class LearningSpaceGenomeConfig:
@@ -110,6 +111,9 @@ class LearningSpaceGenome:
 
     def size(self):
         return len(self.nodes), len(self.connections)
+
+    def knowledge_states(self) -> List[KnowledgeState]:
+        return [node.knowledge_state for node in self.nodes.values()]
 
     def _add_connection(self, source_key, destination_key):
         connection_key = (source_key, destination_key)

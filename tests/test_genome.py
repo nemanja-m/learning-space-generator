@@ -60,6 +60,11 @@ class TestLearningSpaceGenome:
     def test_distance(self):
         assert self.genome.distance(self.other) == 2 + 1
 
+    def test_get_knowledge_states(self):
+        knowledge_states = self.genome.knowledge_states()
+        assert isinstance(knowledge_states, list)
+        assert len(knowledge_states) == 2
+
     def test_size(self):
         assert self.genome.size() == (2, 1)
 
