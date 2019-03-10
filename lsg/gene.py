@@ -1,5 +1,4 @@
 import random
-from typing import Tuple
 
 from .structure import KnowledgeState
 
@@ -53,26 +52,3 @@ class KnowledgeStateGene(Gene):
         state_mask = KnowledgeState(new_bitarray)
         new_state = self.knowledge_state | state_mask
         return KnowledgeStateGene(state=new_state)
-
-
-class KnowledgeStateConnectionGene(Gene):
-
-    def __init__(self, key: Tuple[str, str]):
-        super().__init__(key)
-
-    def distance(self, other) -> int:
-        # All connections are same so distance between them is zero.
-        return 0
-
-    def copy(self):
-        return KnowledgeStateConnectionGene(key=self.key)
-
-    def crossover(self, other):
-        assert self.key == other.key, 'Gene keys must be same.'
-
-        # All connections are same so crossover always returns same gene.
-        return self
-
-    def mutate(self) -> Gene:
-        # Connection genes don't mutate
-        return self

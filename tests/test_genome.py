@@ -22,19 +22,10 @@ class TestLearningSpaceGenome:
         assert root_key in self.other.nodes
         assert self.genome != self.other
 
-        next_node_key = next(
-            node_key
-            for node_key in self.genome.nodes
-            if node_key != root_key
-        )
-
-        assert (root_key, next_node_key) in self.genome.connections
-
     def test_configure_crossover(self):
         new_genome = LearningSpaceGenome(key=0)
         new_genome.configure_crossover(self.genome, self.other, self.config)
         assert len(new_genome.nodes) == 2
-        assert len(new_genome.connections) == 1
 
         # self.genome is more fit than self.other
         assert all(node_key in new_genome.nodes for node_key in self.genome.nodes)
@@ -58,7 +49,7 @@ class TestLearningSpaceGenome:
         assert '111' in genome.nodes
 
     def test_distance(self):
-        assert self.genome.distance(self.other) == 2 + 1
+        assert self.genome.distance(self.other) == 1.0
 
     def test_get_knowledge_states(self):
         knowledge_states = self.genome.knowledge_states()
@@ -66,7 +57,7 @@ class TestLearningSpaceGenome:
         assert len(knowledge_states) == 2
 
     def test_size(self):
-        assert self.genome.size() == (2, 1)
+        assert self.genome.size() == (2, None)
 
     def test_eq(self):
         assert self.genome != self.other
