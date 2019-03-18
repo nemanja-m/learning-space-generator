@@ -1,14 +1,15 @@
 import argparse
 import configparser
+import csv
 import random
 from typing import List
 
 import neat
-import pandas as pd
 
 from . import paths
 from .evaluation import LearningSpaceEvaluator
 from .genome import LearningSpaceGenome
+
 
 GENERATIONS = 15
 OUT_GRAPH_FILE = './graph.png'
@@ -42,13 +43,23 @@ def show_learning_space_graph(learning_space, outfile='graph.png') -> None:
 
 
 def load_response_patterns(num_questions: int) -> List[str]:
-    df = pd.read_csv(paths.RESPONSES_PATH, header=None)
-    cols = [random.randint(0, len(df.columns) - 1) for _ in range(num_questions)]
-    df = df.iloc[:, cols]
-    response_patterns = [
-        ''.join([str(r) for r in response])
-        for _, *response in df.itertuples()
-    ]
+    response_patterns = []
+    with open(paths.RESPONSES_PATH, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        ncols = len(next(csv_reader))
+
+        # CSV file has no header and we need to go back to the begining of a file.
+        csv_file.seek(0)
+
+        included_cols = set(random.sample(range(ncols), num_questions))
+        for row in csv_reader:
+            filtered_values = [
+                str(value)
+                for col, value in enumerate(row)
+                if col in included_cols
+            ]
+            response = ''.join(filtered_values)
+            response_patterns.append(response)
     return response_patterns
 
 
