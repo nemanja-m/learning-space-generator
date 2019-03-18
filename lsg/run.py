@@ -9,6 +9,7 @@ import neat
 from . import paths
 from .evaluation import LearningSpaceEvaluator
 from .genome import LearningSpaceGenome
+from .reporting import TqdmReporter
 
 
 GENERATIONS = 15
@@ -28,14 +29,14 @@ def run_neat(generations: int,
     population = neat.Population(config)
 
     if verbose:
-        population.add_reporter(neat.StdOutReporter(show_species_detail=True))
+        population.add_reporter(TqdmReporter(total_generations=generations))
 
     evaluator = LearningSpaceEvaluator(responses)
     optimal_ls = population.run(evaluator.evaluate_genomes, generations)
     return optimal_ls
 
 
-def show_learning_space_graph(learning_space, outfile='graph.png') -> None:
+def save_learning_space_graph(learning_space, outfile='graph.png') -> None:
     graph = learning_space.to_pydot_graph()
     graph_image_bytes = graph.create_png(prog='dot')
     with open(outfile, 'wb') as fp:
@@ -75,7 +76,7 @@ def parse_command_line_args() -> argparse.Namespace:
     parser.add_argument('-c', '--config', type=str, default=paths.DEFAULT_CONFIG_PATH)
     parser.add_argument('-g', '--generations', type=int, default=GENERATIONS)
     parser.add_argument('-o', '--out', type=str, default=OUT_GRAPH_FILE)
-    parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument('-s', '--silent', action='store_true')
     return parser.parse_args()
 
 
@@ -86,9 +87,12 @@ if __name__ == '__main__':
     num_items = int(config['knowledge_items'])
     response_patterns = load_response_patterns(num_questions=num_items)
 
+    print('\nRunning NEAT for {} generations.\n'.format(args.generations))
+
     optimal_ls = run_neat(generations=args.generations,
                           config_filename=args.config,
                           responses=response_patterns,
-                          verbose=args.verbose)
+                          verbose=not args.silent)
 
-    show_learning_space_graph(learning_space=optimal_ls, outfile=args.out)
+    save_learning_space_graph(learning_space=optimal_ls, outfile=args.out)
+    print("\nThe best learning space graph saved to '{}'.".format(args.out))
