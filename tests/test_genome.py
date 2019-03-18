@@ -6,7 +6,7 @@ from lsg.structure import KnowledgeState
 class TestLearningSpaceGenome:
 
     def setup(self):
-        self.config = LearningSpaceGenomeConfig()
+        self.config = LearningSpaceGenomeConfig(knowledge_items=3, mutation_prob=1.0)
 
         self.genome = LearningSpaceGenome(key=43)
         self.genome.configure_new(self.config)
@@ -17,7 +17,7 @@ class TestLearningSpaceGenome:
         self.other.fitness = 23
 
     def test_configure_new(self):
-        root_key = self.config.TRIVIAL_LEARNING_SPACE.empty_state.to_bitstring()
+        root_key = self.config.trivial_learning_space.empty_state.to_bitstring()
         assert root_key in self.genome.nodes
         assert root_key in self.other.nodes
         assert self.genome != self.other
@@ -31,8 +31,15 @@ class TestLearningSpaceGenome:
         assert all(node_key in new_genome.nodes for node_key in self.genome.nodes)
 
     def test_mutate(self):
-        self.genome.mutate()
+        self.genome.mutate(config=self.config)
         assert len(self.genome.nodes) >= 2
+
+        self.config.mutation_prob = 0
+        old_nodes = self.genome.nodes.keys()
+
+        self.genome.mutate(config=self.config)
+        new_nodes = self.genome.nodes.keys()
+        assert old_nodes == new_nodes
 
     def test_ensure_closure_under_union(self):
         genome = LearningSpaceGenome(key=0)

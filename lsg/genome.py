@@ -1,13 +1,33 @@
 import random
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from .gene import KnowledgeStateGene
 from .structure import TrivialLearningSpace, KnowledgeState
 
 
+dtype = Union[int, float, str, bool]
+
+
+class ConfigException(Exception):
+    pass
+
+
 class LearningSpaceGenomeConfig:
 
-    TRIVIAL_LEARNING_SPACE = TrivialLearningSpace(num_knowledge_items=4)
+    def __init__(self, **params):
+        items = self._get_config_setting(params, setting='knowledge_items', dtype=int)
+        self.trivial_learning_space = TrivialLearningSpace(num_knowledge_items=items)
+        self.mutation_prob = self._get_config_setting(params,
+                                                      setting='mutation_prob',
+                                                      dtype=float)
+
+    def _get_config_setting(self, params: dict, setting: str, dtype: dtype) -> str:
+        value = params.get(setting, None)
+
+        if value is None:
+            raise ConfigException("'{}' missing from [LearningSpaceGenome]"
+                                  " section in config file".format(setting))
+        return dtype(value)
 
 
 class LearningSpaceGenome:
@@ -25,9 +45,9 @@ class LearningSpaceGenome:
         knowledge state with one knowledge item.
 
         """
-        empty_state = config.TRIVIAL_LEARNING_SPACE.empty_state
+        empty_state = config.trivial_learning_space.empty_state
         self._add_node(knowledge_state=empty_state)
-        reachable_nodes = config.TRIVIAL_LEARNING_SPACE.reachable_nodes(node=empty_state)
+        reachable_nodes = config.trivial_learning_space.reachable_nodes(node=empty_state)
         destination_state = random.choice(tuple(reachable_nodes))
         self._add_node(knowledge_state=destination_state)
 
@@ -53,6 +73,11 @@ class LearningSpaceGenome:
                 self.nodes[key] = node_gene_1.crossover(node_gene_2)
 
     def mutate(self, config: LearningSpaceGenomeConfig = None) -> None:
+        run_mutation = random.random() <= config.mutation_prob
+
+        if not run_mutation:
+            return
+
         random_node = random.choice(list(self.nodes.values()))
         mutated_node = random_node.mutate()
 
@@ -116,5 +141,5 @@ class LearningSpaceGenome:
         return self.key == other.key
 
     @classmethod
-    def parse_config(cls, _params: dict) -> LearningSpaceGenomeConfig:
-        return LearningSpaceGenomeConfig()
+    def parse_config(cls, params: dict) -> LearningSpaceGenomeConfig:
+        return LearningSpaceGenomeConfig(**params)
