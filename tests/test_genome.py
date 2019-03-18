@@ -71,3 +71,14 @@ class TestLearningSpaceGenome:
 
         new_genome = LearningSpaceGenome(key=self.genome.key)
         assert new_genome == self.genome
+
+    def test_is_valid(self):
+        genome = LearningSpaceGenome(key=43)
+        genome.configure_new(self.config)
+
+        # Missing full state.
+        assert not genome.is_valid()
+
+        new_gene = KnowledgeStateGene(state=KnowledgeState('111'))
+        genome._ensure_closure_under_union(new_gene)
+        assert genome.is_valid()

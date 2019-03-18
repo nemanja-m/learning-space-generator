@@ -1,7 +1,9 @@
 import random
+import itertools
 from typing import List, Tuple, Union
 
 import pydot
+from bitarray import bitarray
 
 from .gene import KnowledgeStateGene
 from .structure import TrivialLearningSpace, KnowledgeState
@@ -141,6 +143,23 @@ class LearningSpaceGenome:
 
     def __eq__(self, other: 'LearningSpaceGenome') -> bool:
         return self.key == other.key
+
+    def is_valid(self) -> bool:
+        return self._contains_trivial_states() and self._is_closed_under_union()
+
+    def _contains_trivial_states(self) -> bool:
+        knowledge_states = self.knowledge_states()
+        items = len(knowledge_states[0]._bitarray)
+        empty_state_key = '0' * items
+        full_state_key = '1' * items
+        return empty_state_key in self.nodes and full_state_key in self.nodes
+
+    def _is_closed_under_union(self) -> bool:
+        for s, t in itertools.combinations(self.nodes.keys(), r=2):
+            union = bitarray(s) | bitarray(t)
+            if union.to01() not in self.nodes:
+                return False
+        return True
 
     def to_pydot_graph(self) -> pydot.Dot:
         knowledge_states = sorted(self.knowledge_states(),
