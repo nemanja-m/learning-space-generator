@@ -1,6 +1,8 @@
 import random
 from typing import List, Tuple, Union
 
+import pydot
+
 from .gene import KnowledgeStateGene
 from .structure import TrivialLearningSpace, KnowledgeState
 
@@ -139,6 +141,18 @@ class LearningSpaceGenome:
 
     def __eq__(self, other: 'LearningSpaceGenome') -> bool:
         return self.key == other.key
+
+    def to_pydot_graph(self) -> pydot.Dot:
+        knowledge_states = sorted(self.knowledge_states(),
+                                  key=lambda state: sum(state._bitarray))
+        edges = []
+        for source_idx, source_state in enumerate(knowledge_states[:-1]):
+            for dst_state in knowledge_states[source_idx + 1:]:
+                if sum((source_state ^ dst_state)._bitarray) == 1:
+                    src = str(source_state)
+                    dst = str(dst_state)
+                    edges.append((src, dst))
+        return pydot.graph_from_edges(edges, directed=True)
 
     @classmethod
     def parse_config(cls, params: dict) -> LearningSpaceGenomeConfig:
