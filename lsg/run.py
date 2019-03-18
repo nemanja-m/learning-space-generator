@@ -32,7 +32,13 @@ def run_neat(generations: int,
         population.add_reporter(TqdmReporter(total_generations=generations))
 
     evaluator = LearningSpaceEvaluator(responses)
-    optimal_ls = population.run(evaluator.evaluate_genomes, generations)
+
+    try:
+        optimal_ls = population.run(evaluator.evaluate_genomes, generations)
+    except (EOFError, KeyboardInterrupt) as e:
+        optimal_ls = population.best_genome
+        print('\n\nEvolution interrupted. Returning current best genome.')
+
     return optimal_ls
 
 
@@ -95,4 +101,4 @@ if __name__ == '__main__':
                           verbose=not args.silent)
 
     save_learning_space_graph(learning_space=optimal_ls, outfile=args.out)
-    print("\nThe best learning space graph saved to '{}'.".format(args.out))
+    print("The best learning space graph saved to '{}'.".format(args.out))
