@@ -1,12 +1,13 @@
-import random
 import itertools
+import random
 from typing import List, Tuple, Union
 
+import numpy as np
 import pydot
 from bitarray import bitarray
 
 from .gene import KnowledgeStateGene
-from .structure import TrivialLearningSpace, KnowledgeState
+from .structure import KnowledgeState
 
 
 dtype = Union[int, float, str, bool]
@@ -19,11 +20,17 @@ class ConfigException(Exception):
 class LearningSpaceGenomeConfig:
 
     def __init__(self, **params):
-        items = self._get_config_setting(params, setting='knowledge_items', dtype=int)
-        self.trivial_learning_space = TrivialLearningSpace(num_knowledge_items=items)
         self.mutation_prob = self._get_config_setting(params,
                                                       setting='mutation_prob',
                                                       dtype=float)
+
+        items = self._get_config_setting(params, setting='knowledge_items', dtype=int)
+        self.empty_state = KnowledgeState('0' * items)
+        self.full_state = KnowledgeState('1' * items)
+
+        # Reachable states from empty state.
+        self.single_item_states = set(KnowledgeState(state)
+                                      for state in np.eye(items, dtype=np.bool).tolist())
 
     def _get_config_setting(self, params: dict, setting: str, dtype: dtype) -> str:
         value = params.get(setting, None)
@@ -49,9 +56,8 @@ class LearningSpaceGenome:
         knowledge state with one knowledge item.
 
         """
-        empty_state = config.trivial_learning_space.empty_state
-        self._add_node(knowledge_state=empty_state)
-        reachable_nodes = config.trivial_learning_space.reachable_nodes(node=empty_state)
+        self._add_node(knowledge_state=config.empty_state)
+        reachable_nodes = config.single_item_states
         destination_state = random.choice(tuple(sorted(reachable_nodes)))
         self._add_node(knowledge_state=destination_state)
 
@@ -82,7 +88,7 @@ class LearningSpaceGenome:
         if not run_mutation:
             return
 
-        random_node = random.choice(list(self.nodes.values()))
+        random_node = random.choice(list(sorted(self.nodes.values())))
         mutated_node = random_node.mutate()
 
         # There is no new nodes during mutation

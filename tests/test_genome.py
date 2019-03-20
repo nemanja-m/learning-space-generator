@@ -17,7 +17,7 @@ class TestLearningSpaceGenome:
         self.other.fitness = 23
 
     def test_configure_new(self):
-        root_key = self.config.trivial_learning_space.empty_state.to_bitstring()
+        root_key = self.config.empty_state.to_bitstring()
         assert root_key in self.genome.nodes
         assert root_key in self.other.nodes
         assert self.genome != self.other
