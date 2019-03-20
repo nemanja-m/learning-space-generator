@@ -52,7 +52,7 @@ class LearningSpaceGenome:
         empty_state = config.trivial_learning_space.empty_state
         self._add_node(knowledge_state=empty_state)
         reachable_nodes = config.trivial_learning_space.reachable_nodes(node=empty_state)
-        destination_state = random.choice(tuple(reachable_nodes))
+        destination_state = random.choice(tuple(sorted(reachable_nodes)))
         self._add_node(knowledge_state=destination_state)
 
     def configure_crossover(self,
@@ -134,8 +134,9 @@ class LearningSpaceGenome:
         """
         return len(self.nodes), None
 
-    def knowledge_states(self) -> List[KnowledgeState]:
-        return [node.knowledge_state for node in self.nodes.values()]
+    def knowledge_states(self, sort: bool = False) -> List[KnowledgeState]:
+        states_gen = (node.knowledge_state for node in self.nodes.values())
+        return list(sorted(states_gen) if sorted else states_gen)
 
     def _add_node(self, knowledge_state: KnowledgeState) -> None:
         node = KnowledgeStateGene(state=knowledge_state)
@@ -162,8 +163,7 @@ class LearningSpaceGenome:
         return True
 
     def to_pydot_graph(self) -> pydot.Dot:
-        knowledge_states = sorted(self.knowledge_states(),
-                                  key=lambda state: sum(state._bitarray))
+        knowledge_states = self.knowledge_states(sort=True)
         edges = []
         for source_idx, source_state in enumerate(knowledge_states[:-1]):
             for dst_state in knowledge_states[source_idx + 1:]:

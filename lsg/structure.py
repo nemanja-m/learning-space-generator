@@ -45,18 +45,32 @@ class KnowledgeState:
         return KnowledgeState(result)
 
     def __str__(self):
-        state_str = self.to_bitstring()
-        if int(state_str) == 0:
+        if int(self.to_bitstring()) == 0:
             return self.EMPTY_STATE_SYMBOL
 
-        return '{' + ', '.join([
+        return '{' + ', '.join(self._to_letters()) + '}'
+
+    def _to_letters(self) -> str:
+        return [
             string.ascii_letters[i]
-            for i, bit in enumerate(state_str)
+            for i, bit in enumerate(self.to_bitstring())
             if bit == '1'
-        ]) + '}'
+        ]
 
     def __repr__(self):
         return str(self)
+
+    def __lt__(self, other: 'KnowledgeState') -> bool:
+        self_letters = self._to_letters()
+        other_letters = other._to_letters()
+
+        if len(self_letters) < len(other_letters):
+            return True
+
+        if len(self_letters) == len(other_letters):
+            return self_letters < other_letters  # Compare strings.
+
+        return False
 
 
 class TrivialLearningSpace:

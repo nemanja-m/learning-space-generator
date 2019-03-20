@@ -52,3 +52,6 @@ class KnowledgeStateGene(Gene):
         state_mask = KnowledgeState(new_bitarray)
         new_state = self.knowledge_state | state_mask
         return KnowledgeStateGene(state=new_state)
+
+    def __lt__(self, other):
+        return self.knowledge_state < other.knowledge_state

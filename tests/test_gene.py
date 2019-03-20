@@ -40,3 +40,9 @@ class TestKnowledgeStateGene:
         random.seed(23)
         mutated_gene = gene.mutate()
         assert mutated_gene.knowledge_state.to_bitstring() == '10100'
+
+    def test_lt(self):
+        other = KnowledgeStateGene(state=KnowledgeState('010'))
+        assert other < self.gene
+
+        assert tuple(sorted([self.gene, other])) == (other, self.gene)

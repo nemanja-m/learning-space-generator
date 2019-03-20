@@ -71,6 +71,13 @@ class TestKnowledgeState:
         state = KnowledgeState('101')
         assert state.to_bitstring() == '101'
 
+    def test_lt(self):
+        s = KnowledgeState('111')
+        p = KnowledgeState('000')
+        assert p < s
+
+        assert tuple(sorted([s, p])) == (p, s)
+
 
 class TestTrivialLearningSpace:
 
