@@ -1,5 +1,7 @@
-from collections import defaultdict
-from typing import List, Tuple, Dict
+from collections import defaultdict, MutableMapping
+from typing import List, Tuple, Dict, Callable
+
+import numpy as np
 
 from .genome import LearningSpaceGenome, LearningSpaceGenomeConfig
 from .structure import KnowledgeState
@@ -8,10 +10,65 @@ from .structure import KnowledgeState
 Partitions = Dict[KnowledgeState, List[str]]
 
 
+class PartitionCache(MutableMapping):
+    """Cache for parition function.
+
+    Partition function partitions response patterns to groups represented by the
+    closes knowledge state from given knowledge structure. Partition function
+    values can be cached and speed up population evaluation time. Speed up is
+    more evident when population size gets bigger.
+
+    Input to partition function is list of knowledge states which is unhashable
+    by default. Thus, knowledge state list must be transformed in hashable
+    value. Custom transformation function `_key_transform` transforms list of
+    knowledge states into unique string that is used as a key for parition
+    function values.
+
+    """
+
+    def __init__(self):
+        self._cache = dict()
+        self._hits = 0
+        self._misses = 0
+
+    def get(self, key: List[KnowledgeState], partition_func: Callable) -> Partitions:
+        if key in self:
+            self._hits += 1
+        else:
+            partition_dict = partition_func(key)
+            self[key] = partition_dict
+            self._misses += 1
+        return self[key]
+
+    def print_stats(self):
+        print('hits: {}\nmisses: {}'.format(self._hits, self._misses))
+
+    def __getitem__(self, key: List[KnowledgeState]) -> Partitions:
+        return self._cache[self._transform_key(key)]
+
+    def __setitem__(self, key: List[KnowledgeState], value: Partitions):
+        self._cache[self._transform_key(key)] = value
+
+    def __delitem__(self, key: List[KnowledgeState]):
+        del self._cache[self._transform_key(key)]
+
+    def __iter__(self):
+        return iter(self._cache)
+
+    def __len__(self):
+        return len(self._cache)
+
+    def _transform_key(self, knowledge_states: List[KnowledgeState]):
+        key = np.array([state._bitarray.tolist()
+                        for state in knowledge_states], dtype=np.bool).sum(axis=0)
+        return tuple(key)
+
+
 class LearningSpaceEvaluator:
 
     def __init__(self, response_patterns: List[str]):
         self._response_patterns = response_patterns
+        self._partition_cache = PartitionCache()
 
     def evaluate_genomes(self,
                          genomes: List[Tuple[int, LearningSpaceGenome]],
@@ -26,7 +83,8 @@ class LearningSpaceEvaluator:
     def _get_discrepancy(self, genome: LearningSpaceGenome) -> float:
         """Returns distance between learning space and observed response patterns."""
         knowledge_states = genome.knowledge_states()
-        partition_dict = self._partition(knowledge_states)
+        partition_dict = self._partition_cache.get(knowledge_states,
+                                                   partition_func=self._partition)
         discrepancy = 0
         for response in self._response_patterns:
             for state in knowledge_states:
@@ -39,7 +97,7 @@ class LearningSpaceEvaluator:
         partitions = defaultdict(list)
         for response in self._response_patterns:
             centroid = min(knowledge_states,
-                           key=lambda state: _min_state_distance(state, response))
+                           key=lambda state: _state_distance(state, response))
             partitions[centroid].append(response)
         return partitions
 
@@ -51,7 +109,7 @@ class LearningSpaceEvaluator:
         return sum(1 for pattern in response_patterns if pattern == response_pattern)
 
 
-def _min_state_distance(state: KnowledgeState, response_pattern: str) -> int:
+def _state_distance(state: KnowledgeState, response_pattern: str) -> int:
     """Returns bit distance between knowledge state and response pattern."""
     bitarray = (state ^ KnowledgeState(response_pattern))._bitarray
     return sum(bitarray)
