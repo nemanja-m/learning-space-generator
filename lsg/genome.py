@@ -1,6 +1,8 @@
+import json
 import bisect
 import itertools
 import random
+from collections import defaultdict
 from typing import List, Tuple, Union
 
 import numpy as np
@@ -210,15 +212,26 @@ class LearningSpaceGenome:
         return True
 
     def to_pydot_graph(self) -> pydot.Dot:
-        knowledge_states = self.knowledge_states(sort=True)
+        return pydot.graph_from_edges(self._get_edges(), directed=True)
+
+    def to_json(self) -> str:
+        json_dict = defaultdict(list)
+        for source, destination in self._get_edges():
+            if source == KnowledgeState.EMPTY_STATE_SYMBOL:
+                source = '{O}'
+            json_dict[source].append(destination)
+        return json.dumps(json_dict, indent=2)
+
+    def _get_edges(self) -> List[Tuple[str, str]]:
         edges = []
+        knowledge_states = self.knowledge_states(sort=True)
         for source_idx, source_state in enumerate(knowledge_states[:-1]):
             for dst_state in knowledge_states[source_idx + 1:]:
                 if sum((source_state ^ dst_state)._bitarray) == 1:
                     src = str(source_state)
                     dst = str(dst_state)
                     edges.append((src, dst))
-        return pydot.graph_from_edges(edges, directed=True)
+        return edges
 
     @classmethod
     def parse_config(cls, params: dict) -> LearningSpaceGenomeConfig:

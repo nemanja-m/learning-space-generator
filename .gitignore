@@ -102,3 +102,6 @@ ENV/
 
 # generated learning space graph images
 *.png
+
+# generated JSON graph files
+*.json

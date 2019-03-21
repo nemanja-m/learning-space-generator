@@ -11,7 +11,7 @@ from . import paths, evaluation, reporting, genome
 
 EARLY_STOPPING_PATIENCE = 20
 GENERATIONS = 15
-OUT_GRAPH_FILE = './graph.png'
+JSON_GRAPH_FILE = 'graph.json'
 
 
 def run_neat(generations: int,
@@ -102,10 +102,11 @@ def parse_command_line_args() -> argparse.Namespace:
                                      'the optimal learning space from response patterns.')
     parser.add_argument('-c', '--config', type=str, default=paths.DEFAULT_CONFIG_PATH)
     parser.add_argument('-g', '--generations', type=int, default=GENERATIONS)
-    parser.add_argument('-o', '--out', type=str, default=OUT_GRAPH_FILE)
-    parser.add_argument('-s', '--silent', action='store_true')
-    parser.add_argument('-p', '--parallel', action='store_true')
     parser.add_argument('-t', '--patience', type=int, default=EARLY_STOPPING_PATIENCE)
+    parser.add_argument('-i', '--png', type=str)
+    parser.add_argument('-j', '--json', type=str, default=JSON_GRAPH_FILE)
+    parser.add_argument('-p', '--parallel', action='store_true')
+    parser.add_argument('-s', '--silent', action='store_true')
     return parser.parse_args()
 
 
@@ -128,5 +129,11 @@ if __name__ == '__main__':
     if not optimal_ls.is_valid():
         print('\n[WARNING] Learning space is not valid.')
 
-    save_learning_space_graph(learning_space=optimal_ls, outfile=args.out)
-    print("\nThe best learning space graph saved to '{}'.".format(args.out))
+    if args.json:
+        with open(args.json, 'w') as fp:
+            fp.write(optimal_ls.to_json())
+            print("\nThe best learning space graph JSON saved to '{}'.".format(args.json))
+
+    if args.png:
+        save_learning_space_graph(learning_space=optimal_ls, outfile=args.png)
+        print("The best learning space graph PNG saved to '{}'.".format(args.png))
