@@ -8,9 +8,10 @@ import neat
 
 from . import paths, evaluation
 from .genome import LearningSpaceGenome
-from .reporting import TqdmReporter
+from .reporting import TqdmReporter, EarlyStoppingReporter, EarlyStoppingException
 
 
+EARLY_STOPPING_PATIENCE = 10
 GENERATIONS = 15
 OUT_GRAPH_FILE = './graph.png'
 
@@ -18,6 +19,7 @@ OUT_GRAPH_FILE = './graph.png'
 def run_neat(generations: int,
              config_filename: str,
              responses: List[str],
+             early_stopping_patience: int,
              verbose: bool = False,
              parallel: bool = False) -> LearningSpaceGenome:
     config = neat.Config(LearningSpaceGenome,
@@ -27,6 +29,7 @@ def run_neat(generations: int,
                          config_filename)
 
     population = neat.Population(config)
+    population.add_reporter(EarlyStoppingReporter(patience=early_stopping_patience))
 
     if verbose:
         population.add_reporter(TqdmReporter(total_generations=generations))
@@ -38,7 +41,9 @@ def run_neat(generations: int,
 
     try:
         optimal_ls = population.run(evaluator.evaluate, generations)
-    except (EOFError, KeyboardInterrupt) as e:
+    except EarlyStoppingException:
+        print('\n\nNo fitness improvement '
+              'for {} generations.'.format(early_stopping_patience), end='')
         optimal_ls = population.best_genome
 
     return optimal_ls
@@ -86,6 +91,7 @@ def parse_command_line_args() -> argparse.Namespace:
     parser.add_argument('-o', '--out', type=str, default=OUT_GRAPH_FILE)
     parser.add_argument('-s', '--silent', action='store_true')
     parser.add_argument('-p', '--parallel', action='store_true')
+    parser.add_argument('-t', '--patience', type=int, default=EARLY_STOPPING_PATIENCE)
     return parser.parse_args()
 
 
@@ -101,6 +107,7 @@ if __name__ == '__main__':
     optimal_ls = run_neat(generations=args.generations,
                           config_filename=args.config,
                           responses=response_patterns,
+                          early_stopping_patience=args.patience,
                           verbose=not args.silent,
                           parallel=args.parallel)
 

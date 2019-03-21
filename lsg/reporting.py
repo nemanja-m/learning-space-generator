@@ -27,3 +27,23 @@ class TqdmReporter(BaseReporter):
         discrepancy = -(best_genome.fitness + size)
         self._progress_bar.set_postfix(OrderedDict(discrepancy=discrepancy, size=size))
         self._progress_bar.update()
+
+
+class EarlyStoppingException(Exception):
+    pass
+
+
+class EarlyStoppingReporter(BaseReporter):
+
+    def __init__(self, patience: int = 10):
+        self._patience = patience
+        self._prev_best_fitness = -float('inf')
+
+    def post_evaluate(self, config, population, species, best_genome):
+        if best_genome.fitness > self._prev_best_fitness:
+            self._prev_best_fitness = best_genome.fitness
+        else:
+            self._patience -= 1
+
+        if self._patience == 0:
+            raise EarlyStoppingException()
