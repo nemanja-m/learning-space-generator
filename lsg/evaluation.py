@@ -10,7 +10,7 @@ from .structure import KnowledgeState
 Partitions = Dict[KnowledgeState, List[str]]
 
 
-class PartitionCache(MutableMapping):
+class DiscrepancyCache(MutableMapping):
     """Cache for parition function.
 
     Partition function partitions response patterns to groups represented by the
@@ -31,17 +31,17 @@ class PartitionCache(MutableMapping):
         self._hits = 0
         self._misses = 0
 
-    def get(self, key: List[KnowledgeState], partition_func: Callable) -> Partitions:
+    def get(self, key: List[KnowledgeState], discrepancy_func: Callable) -> Partitions:
         if key in self:
             self._hits += 1
         else:
-            partition_dict = partition_func(key)
+            partition_dict = discrepancy_func(key)
             self[key] = partition_dict
             self._misses += 1
         return self[key]
 
     def print_stats(self):
-        print('hits: {}\nmisses: {}'.format(self._hits, self._misses))
+        print('\nhits: {}\nmisses: {}\n'.format(self._hits, self._misses))
 
     def __getitem__(self, key: List[KnowledgeState]) -> Partitions:
         return self._cache[self._transform_key(key)]
@@ -61,30 +61,32 @@ class PartitionCache(MutableMapping):
     def _transform_key(self, knowledge_states: List[KnowledgeState]):
         key = np.array([state._bitarray.tolist()
                         for state in knowledge_states], dtype=np.bool).sum(axis=0)
-        return tuple(key)
+        return (len(knowledge_states),) + tuple(key)
 
 
 class LearningSpaceEvaluator:
 
     def __init__(self, response_patterns: List[str]):
         self._response_patterns = response_patterns
-        self._partition_cache = PartitionCache()
+        self._discrepancy_cache = DiscrepancyCache()
 
     def evaluate_genomes(self,
                          genomes: List[Tuple[int, LearningSpaceGenome]],
                          config: LearningSpaceGenomeConfig = None) -> None:
         for _, genome in genomes:
             num_nodes, _ = genome.size()
-            discrepancy = self._get_discrepancy(genome)
+            discrepancy = self._evaluate(genome.knowledge_states())
 
-            # Fitness is negative because we want to maximize fitness.
+            # Fitness is negative because objective is to maximize fitness.
             genome.fitness = -(discrepancy + num_nodes)
 
-    def _get_discrepancy(self, genome: LearningSpaceGenome) -> float:
-        """Returns distance between learning space and observed response patterns."""
-        knowledge_states = genome.knowledge_states()
-        partition_dict = self._partition_cache.get(knowledge_states,
-                                                   partition_func=self._partition)
+    def _evaluate(self, knowledge_states):
+        return self._discrepancy_cache.get(knowledge_states,
+                                           discrepancy_func=self._get_discrepancy)
+
+    def _get_discrepancy(self, knowledge_states) -> float:
+        """Returns discrepancy between learning space and observed response patterns."""
+        partition_dict = self._partition(knowledge_states)
         discrepancy = 0
         for response in self._response_patterns:
             for state in knowledge_states:
