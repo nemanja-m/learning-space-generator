@@ -19,7 +19,7 @@ class TqdmReporter(BaseReporter):
         self._progress_bar = tqdm(total=total_generations, unit='gen')
 
     def __del__(self):
-        self._progress_bar.close()
+        self.close()
 
     def post_evaluate(self, config, population, species, best_genome):
         """Implements base method exeuted after each population evaluation."""
@@ -27,6 +27,9 @@ class TqdmReporter(BaseReporter):
         discrepancy = -(best_genome.fitness + size)
         self._progress_bar.set_postfix(OrderedDict(discrepancy=discrepancy, size=size))
         self._progress_bar.update()
+
+    def close(self):
+        self._progress_bar.close()
 
 
 class EarlyStoppingException(Exception):
@@ -47,3 +50,24 @@ class EarlyStoppingReporter(BaseReporter):
 
         if self._patience == 0:
             raise EarlyStoppingException()
+
+
+class TerminationThresholdReachedException(Exception):
+    def __init__(self, best_genome, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.best_genome = best_genome
+
+
+class FitnessTerminationReporter(BaseReporter):
+
+    def __init__(self, threshold: float):
+        self._threshold = threshold
+
+    def post_evaluate(self, config, population, species, best_genome):
+        # Check if best genome reached zero discrepancy after each evaluation.
+        # This is needed because neat-python does not support dynamic
+        # fitness criterion function.
+        genome_size, _ = best_genome.size()
+        terminate = (best_genome.fitness + genome_size) > self._threshold
+        if terminate and best_genome.is_valid():
+            raise TerminationThresholdReachedException(best_genome)

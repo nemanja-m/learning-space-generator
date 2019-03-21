@@ -6,12 +6,10 @@ from typing import List
 
 import neat
 
-from . import paths, evaluation
-from .genome import LearningSpaceGenome
-from .reporting import TqdmReporter, EarlyStoppingReporter, EarlyStoppingException
+from . import paths, evaluation, reporting, genome
 
 
-EARLY_STOPPING_PATIENCE = 10
+EARLY_STOPPING_PATIENCE = 20
 GENERATIONS = 15
 OUT_GRAPH_FILE = './graph.png'
 
@@ -21,18 +19,24 @@ def run_neat(generations: int,
              responses: List[str],
              early_stopping_patience: int,
              verbose: bool = False,
-             parallel: bool = False) -> LearningSpaceGenome:
-    config = neat.Config(LearningSpaceGenome,
+             parallel: bool = False) -> genome.LearningSpaceGenome:
+    config = neat.Config(genome.LearningSpaceGenome,
                          neat.DefaultReproduction,
                          neat.DefaultSpeciesSet,
                          neat.DefaultStagnation,
                          config_filename)
 
     population = neat.Population(config)
-    population.add_reporter(EarlyStoppingReporter(patience=early_stopping_patience))
+
+    early_stopper = reporting.EarlyStoppingReporter(patience=early_stopping_patience)
+    population.add_reporter(early_stopper)
+
+    fitness_term_stopper = reporting.FitnessTerminationReporter(threshold=-0.5)
+    population.add_reporter(fitness_term_stopper)
 
     if verbose:
-        population.add_reporter(TqdmReporter(total_generations=generations))
+        tqdm_reporter = reporting.TqdmReporter(total_generations=generations)
+        population.add_reporter(tqdm_reporter)
 
     if parallel:
         evaluator = evaluation.ParallelEvaluator(responses)
@@ -41,10 +45,20 @@ def run_neat(generations: int,
 
     try:
         optimal_ls = population.run(evaluator.evaluate, generations)
-    except EarlyStoppingException:
-        print('\n\nNo fitness improvement '
-              'for {} generations.'.format(early_stopping_patience), end='')
+    except reporting.EarlyStoppingException:
         optimal_ls = population.best_genome
+
+        # Excplicily close tqdm progress bar to fix printing to stdout.
+        tqdm_reporter.close()
+        print('\nNo fitness improvement '
+              'for {} generations.'.format(early_stopping_patience))
+    except reporting.TerminationThresholdReachedException as e:
+        optimal_ls = e.best_genome
+
+        # Excplicily close tqdm progress bar to fix printing to stdout.
+        tqdm_reporter.close()
+        print('\nTermination threshold reached. '
+              'Found genome with {} discrepancy'.format(optimal_ls.discrepancy()))
 
     return optimal_ls
 
