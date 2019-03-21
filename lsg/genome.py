@@ -58,7 +58,7 @@ class LearningSpaceGenome:
         """
         self._add_node(knowledge_state=config.empty_state)
         reachable_nodes = config.single_item_states
-        destination_state = random.choice(tuple(sorted(reachable_nodes)))
+        destination_state = random.choice(tuple(reachable_nodes))
         self._add_node(knowledge_state=destination_state)
 
     def configure_crossover(self,
@@ -88,7 +88,7 @@ class LearningSpaceGenome:
         if not run_mutation:
             return
 
-        random_node = random.choice(list(sorted(self.nodes.values())))
+        random_node = random.choice(list(self.nodes.values()))
         mutated_node = random_node.mutate()
 
         # There is no new nodes during mutation

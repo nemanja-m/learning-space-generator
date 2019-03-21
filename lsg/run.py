@@ -6,8 +6,7 @@ from typing import List
 
 import neat
 
-from . import paths
-from .evaluation import LearningSpaceEvaluator
+from . import paths, evaluation
 from .genome import LearningSpaceGenome
 from .reporting import TqdmReporter
 
@@ -19,7 +18,8 @@ OUT_GRAPH_FILE = './graph.png'
 def run_neat(generations: int,
              config_filename: str,
              responses: List[str],
-             verbose: bool = False) -> LearningSpaceGenome:
+             verbose: bool = False,
+             parallel: bool = False) -> LearningSpaceGenome:
     config = neat.Config(LearningSpaceGenome,
                          neat.DefaultReproduction,
                          neat.DefaultSpeciesSet,
@@ -31,10 +31,13 @@ def run_neat(generations: int,
     if verbose:
         population.add_reporter(TqdmReporter(total_generations=generations))
 
-    evaluator = LearningSpaceEvaluator(responses)
+    if parallel:
+        evaluator = evaluation.ParallelEvaluator(responses)
+    else:
+        evaluator = evaluation.SerialEvaluator(responses)
 
     try:
-        optimal_ls = population.run(evaluator.evaluate_genomes, generations)
+        optimal_ls = population.run(evaluator.evaluate, generations)
     except (EOFError, KeyboardInterrupt) as e:
         optimal_ls = population.best_genome
 
@@ -82,6 +85,7 @@ def parse_command_line_args() -> argparse.Namespace:
     parser.add_argument('-g', '--generations', type=int, default=GENERATIONS)
     parser.add_argument('-o', '--out', type=str, default=OUT_GRAPH_FILE)
     parser.add_argument('-s', '--silent', action='store_true')
+    parser.add_argument('-p', '--parallel', action='store_true')
     return parser.parse_args()
 
 
@@ -97,7 +101,8 @@ if __name__ == '__main__':
     optimal_ls = run_neat(generations=args.generations,
                           config_filename=args.config,
                           responses=response_patterns,
-                          verbose=not args.silent)
+                          verbose=not args.silent,
+                          parallel=args.parallel)
 
     if not optimal_ls.is_valid():
         print('\n[WARNING] Learning space is not valid.')
