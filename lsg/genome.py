@@ -1,3 +1,4 @@
+import bisect
 import itertools
 import random
 from typing import List, Tuple, Union
@@ -17,6 +18,10 @@ class ConfigException(Exception):
     pass
 
 
+class InvalidDistributionFunctionException(Exception):
+    pass
+
+
 class LearningSpaceGenomeConfig:
 
     def __init__(self, **params):
@@ -31,6 +36,12 @@ class LearningSpaceGenomeConfig:
         # Reachable states from empty state.
         self.single_item_states = set(KnowledgeState(state)
                                       for state in np.eye(items, dtype=np.bool).tolist())
+
+        self.mutation_sampling_dist = self._get_config_setting(
+            params,
+            setting='mutation_sampling_dist',
+            dtype=str
+        )
 
     def _get_config_setting(self, params: dict, setting: str, dtype: dtype) -> str:
         value = params.get(setting, None)
@@ -88,7 +99,7 @@ class LearningSpaceGenome:
         if not run_mutation:
             return
 
-        random_node = random.choice(list(self.nodes.values()))
+        random_node = self._sample_node(distribution=config.mutation_sampling_dist)
         mutated_node = random_node.mutate()
 
         # There is no new nodes during mutation
@@ -97,6 +108,26 @@ class LearningSpaceGenome:
 
         self.nodes[mutated_node.key] = mutated_node
         self._ensure_closure_under_union(mutated_node)
+
+    def _sample_node(self, distribution):
+        func = {
+            'uniform': self._sample_uniform_node,
+            'power': self._sample_power_node
+        }.get(distribution)
+
+        if func is None:
+            raise InvalidDistributionFunctionException(distribution)
+
+        return func()
+
+    def _sample_uniform_node(self):
+        return random.choice(list(self.nodes.values()))
+
+    def _sample_power_node(self):
+        bins = np.linspace(0, 1, len(self.nodes))
+        rand = 1 - np.random.power(2)
+        idx = bisect.bisect_right(bins, rand)
+        return list(sorted(self.nodes.values()))[idx]
 
     def _ensure_closure_under_union(self, new_node: KnowledgeStateGene) -> None:
         states_to_add = set()
@@ -140,9 +171,19 @@ class LearningSpaceGenome:
         """
         return len(self.nodes), None
 
+    def discrepancy(self) -> float:
+        """Returns learning space discrepancy from response patterns.
+
+        Genome fitness is calculated as negative sum of discrepancy and number
+        of knowledge states in learning space. Thus, discrepancy is sum of
+        fitness and number of knowledge states.
+
+        """
+        return self.fitness + len(self.nodes)
+
     def knowledge_states(self, sort: bool = False) -> List[KnowledgeState]:
         states_gen = (node.knowledge_state for node in self.nodes.values())
-        return list(sorted(states_gen) if sorted else states_gen)
+        return list(sorted(states_gen) if sort else states_gen)
 
     def _add_node(self, knowledge_state: KnowledgeState) -> None:
         node = KnowledgeStateGene(state=knowledge_state)
