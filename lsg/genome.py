@@ -218,7 +218,7 @@ class LearningSpaceGenome:
         json_dict = defaultdict(list)
         for source, destination in self._get_edges():
             if source == KnowledgeState.EMPTY_STATE_SYMBOL:
-                source = '{O}'
+                source = '{}'
             json_dict[source].append(destination)
         return json.dumps(json_dict, indent=2)
 
