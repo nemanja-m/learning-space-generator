@@ -70,7 +70,7 @@ def save_learning_space_graph(learning_space, outfile='graph.png') -> None:
         fp.write(graph_image_bytes)
 
 
-def load_response_patterns(num_questions: int) -> List[str]:
+def load_response_patterns(knowledge_items: int, randomize: bool = True) -> List[str]:
     response_patterns = []
     with open(paths.RESPONSES_PATH, 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
@@ -79,7 +79,11 @@ def load_response_patterns(num_questions: int) -> List[str]:
         # CSV file has no header and we need to go back to the begining of a file.
         csv_file.seek(0)
 
-        included_cols = set(random.sample(range(ncols), num_questions))
+        if randomize:
+            included_cols = set(random.sample(range(ncols), knowledge_items))
+        else:
+            included_cols = list(range(ncols))[:knowledge_items]
+
         for row in csv_reader:
             filtered_values = [
                 str(value)
@@ -100,13 +104,28 @@ def parse_config_file(config_filename: str) -> dict:
 def parse_command_line_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser('Run NEAT algorithm to get '
                                      'the optimal learning space from response patterns.')
-    parser.add_argument('-c', '--config', type=str, default=paths.DEFAULT_CONFIG_PATH)
-    parser.add_argument('-g', '--generations', type=int, default=GENERATIONS)
-    parser.add_argument('-t', '--patience', type=int, default=EARLY_STOPPING_PATIENCE)
-    parser.add_argument('-i', '--png', type=str)
-    parser.add_argument('-j', '--json', type=str, default=JSON_GRAPH_FILE)
-    parser.add_argument('-p', '--parallel', action='store_true')
-    parser.add_argument('-s', '--silent', action='store_true')
+    parser.add_argument('-c', '--config',
+                        type=str, default=paths.DEFAULT_CONFIG_PATH,
+                        help='Path to config file.')
+    parser.add_argument('-g', '--generations',
+                        type=int, default=GENERATIONS,
+                        help='Number of generations.')
+    parser.add_argument('-t', '--patience',
+                        type=int, default=EARLY_STOPPING_PATIENCE,
+                        help='Number of generations without fitness improvement'
+                             'before algorithm stops.')
+    parser.add_argument('-i', '--png',
+                        type=str,
+                        help='Output path to learning space graph PNG image.')
+    parser.add_argument('-j', '--json',
+                        type=str, default=JSON_GRAPH_FILE,
+                        help='Output path to learning space JSON representation.')
+    parser.add_argument('-p', '--parallel', action='store_true',
+                        help='Enable parallel genome evaluation.')
+    parser.add_argument('-s', '--silent', action='store_true',
+                        help='Supress any output to stdout.')
+    parser.add_argument('-r', '--randomize-items', action='store_true',
+                        help='Randomly load question columns from responses data file.')
     return parser.parse_args()
 
 
@@ -115,7 +134,8 @@ if __name__ == '__main__':
     config = parse_config_file(config_filename=args.config)
 
     num_items = int(config['knowledge_items'])
-    response_patterns = load_response_patterns(num_questions=num_items)
+    response_patterns = load_response_patterns(knowledge_items=num_items,
+                                               randomize=args.randomize_items)
 
     print('\nRunning NEAT for {} generations.\n'.format(args.generations))
 
