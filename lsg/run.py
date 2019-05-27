@@ -30,9 +30,9 @@ def run_neat(generations: int,
 
     population = neat.Population(config)
 
-    if not brute_force:
-        early_stopper = reporting.EarlyStoppingReporter(patience=early_stopping_patience)
-        population.add_reporter(early_stopper)
+    early_stopper = reporting.EarlyStoppingReporter(patience=early_stopping_patience,
+                                                    brute_force=brute_force)
+    population.add_reporter(early_stopper)
 
     fitness_term_stopper = reporting.FitnessTerminationReporter(threshold=-0.5)
     population.add_reporter(fitness_term_stopper)
@@ -53,8 +53,11 @@ def run_neat(generations: int,
 
         # Excplicily close tqdm progress bar to fix printing to stdout.
         tqdm_reporter.close()
-        print('\nNo fitness improvement '
-              'for {} generations.'.format(early_stopping_patience))
+        if brute_force:
+            print('\nBrute force algorithm constructed learning space successfully.')
+        else:
+            print('\nNo fitness improvement '
+                  'for {} generations.'.format(early_stopping_patience))
     except reporting.TerminationThresholdReachedException as e:
         optimal_ls = e.best_genome
 

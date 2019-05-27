@@ -10,8 +10,7 @@ class TqdmReporter(BaseReporter):
     Shows tqdm progress bar with info about:
         - total generations
         - current generation
-        - mean exeution time per generation
-        - the best genome fitness and size
+        - mean execution time per generation the best genome fitness and size
     """
 
     def __init__(self, total_generations: int):
@@ -22,7 +21,7 @@ class TqdmReporter(BaseReporter):
         self.close()
 
     def post_evaluate(self, config, population, species, best_genome):
-        """Implements base method exeuted after each population evaluation."""
+        """Implements base method executed after each population evaluation."""
         size, _ = best_genome.size()
         discrepancy = -(best_genome.fitness + size)
         self._progress_bar.set_postfix(OrderedDict(discrepancy=discrepancy, size=size))
@@ -38,18 +37,26 @@ class EarlyStoppingException(Exception):
 
 class EarlyStoppingReporter(BaseReporter):
 
-    def __init__(self, patience: int = 10):
+    def __init__(self, patience: int = 10, brute_force: bool = False):
+        self._is_brute_force = brute_force
         self._patience = patience
         self._prev_best_fitness = -float('inf')
 
     def post_evaluate(self, config, population, species, best_genome):
-        if best_genome.fitness > self._prev_best_fitness:
-            self._prev_best_fitness = best_genome.fitness
+        if self._is_brute_force:
+            # When running brute force version, algorithm stops as soon as valid
+            # learning space is found. Brute force version is typically run with large
+            # set of knowledge items.
+            if best_genome.is_valid():
+                raise EarlyStoppingException()
         else:
-            self._patience -= 1
+            if best_genome.fitness > self._prev_best_fitness:
+                self._prev_best_fitness = best_genome.fitness
+            else:
+                self._patience -= 1
 
-        if self._patience == 0:
-            raise EarlyStoppingException()
+            if self._patience == 0:
+                raise EarlyStoppingException()
 
 
 class TerminationThresholdReachedException(Exception):
