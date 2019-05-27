@@ -4,6 +4,20 @@ from neat.reporting import BaseReporter
 from tqdm import tqdm
 
 
+class BestGenomeException(Exception):
+    def __init__(self, best_genome, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.best_genome = best_genome
+
+
+class EarlyStoppingException(BestGenomeException):
+    pass
+
+
+class TerminationThresholdReachedException(BestGenomeException):
+    pass
+
+
 class TqdmReporter(BaseReporter):
     """tqdm based reporter.
 
@@ -31,10 +45,6 @@ class TqdmReporter(BaseReporter):
         self._progress_bar.close()
 
 
-class EarlyStoppingException(Exception):
-    pass
-
-
 class EarlyStoppingReporter(BaseReporter):
 
     def __init__(self, patience: int = 10, brute_force: bool = False):
@@ -48,7 +58,7 @@ class EarlyStoppingReporter(BaseReporter):
             # learning space is found. Brute force version is typically run with large
             # set of knowledge items.
             if best_genome.is_valid():
-                raise EarlyStoppingException()
+                raise EarlyStoppingException(best_genome=best_genome)
         else:
             if best_genome.fitness > self._prev_best_fitness:
                 self._prev_best_fitness = best_genome.fitness
@@ -56,13 +66,7 @@ class EarlyStoppingReporter(BaseReporter):
                 self._patience -= 1
 
             if self._patience == 0:
-                raise EarlyStoppingException()
-
-
-class TerminationThresholdReachedException(Exception):
-    def __init__(self, best_genome, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.best_genome = best_genome
+                raise EarlyStoppingException(best_genome=best_genome)
 
 
 class FitnessTerminationReporter(BaseReporter):

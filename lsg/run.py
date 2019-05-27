@@ -48,8 +48,8 @@ def run_neat(generations: int,
 
     try:
         optimal_ls = population.run(evaluator.evaluate, generations)
-    except reporting.EarlyStoppingException:
-        optimal_ls = population.best_genome
+    except reporting.EarlyStoppingException as exception:
+        optimal_ls = exception.best_genome
 
         # Excplicily close tqdm progress bar to fix printing to stdout.
         tqdm_reporter.close()
@@ -58,8 +58,8 @@ def run_neat(generations: int,
         else:
             print('\nNo fitness improvement '
                   'for {} generations.'.format(early_stopping_patience))
-    except reporting.TerminationThresholdReachedException as e:
-        optimal_ls = e.best_genome
+    except reporting.TerminationThresholdReachedException as exception:
+        optimal_ls = exception.best_genome
 
         # Excplicily close tqdm progress bar to fix printing to stdout.
         tqdm_reporter.close()
