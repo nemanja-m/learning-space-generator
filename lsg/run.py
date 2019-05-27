@@ -10,7 +10,8 @@ from . import paths, evaluation, reporting, genome
 
 
 EARLY_STOPPING_PATIENCE = 20
-GENERATIONS = 15
+DEFAULT_GENERATIONS = 15
+MAX_GENERATIONS = 4096
 JSON_GRAPH_FILE = 'graph.json'
 
 
@@ -19,7 +20,8 @@ def run_neat(generations: int,
              responses: List[str],
              early_stopping_patience: int,
              verbose: bool = False,
-             parallel: bool = False) -> genome.LearningSpaceGenome:
+             parallel: bool = False,
+             brute_force: bool = False) -> genome.LearningSpaceGenome:
     config = neat.Config(genome.LearningSpaceGenome,
                          neat.DefaultReproduction,
                          neat.DefaultSpeciesSet,
@@ -28,8 +30,9 @@ def run_neat(generations: int,
 
     population = neat.Population(config)
 
-    early_stopper = reporting.EarlyStoppingReporter(patience=early_stopping_patience)
-    population.add_reporter(early_stopper)
+    if not brute_force:
+        early_stopper = reporting.EarlyStoppingReporter(patience=early_stopping_patience)
+        population.add_reporter(early_stopper)
 
     fitness_term_stopper = reporting.FitnessTerminationReporter(threshold=-0.5)
     population.add_reporter(fitness_term_stopper)
@@ -108,7 +111,7 @@ def parse_command_line_args() -> argparse.Namespace:
                         type=str, default=paths.DEFAULT_CONFIG_PATH,
                         help='Path to config file.')
     parser.add_argument('-g', '--generations',
-                        type=int, default=GENERATIONS,
+                        type=int, default=DEFAULT_GENERATIONS,
                         help='Number of generations.')
     parser.add_argument('-t', '--patience',
                         type=int, default=EARLY_STOPPING_PATIENCE,
@@ -126,6 +129,9 @@ def parse_command_line_args() -> argparse.Namespace:
                         help='Supress any output to stdout.')
     parser.add_argument('-r', '--randomize-items', action='store_true',
                         help='Randomly load question columns from responses data file.')
+    parser.add_argument('-f', '--brute-force', action='store_true',
+                        help='Run brute force algorithm until complete, valid learning'
+                             'space is created')
     return parser.parse_args()
 
 
@@ -137,14 +143,17 @@ if __name__ == '__main__':
     response_patterns = load_response_patterns(knowledge_items=num_items,
                                                randomize=args.randomize_items)
 
-    print('\nRunning NEAT for {} generations.\n'.format(args.generations))
+    generations = MAX_GENERATIONS if args.brute_force else args.generations
 
-    optimal_ls = run_neat(generations=args.generations,
+    print('\nRunning NEAT for {} generations.\n'.format(generations))
+
+    optimal_ls = run_neat(generations=generations,
                           config_filename=args.config,
                           responses=response_patterns,
                           early_stopping_patience=args.patience,
                           verbose=not args.silent,
-                          parallel=args.parallel)
+                          parallel=args.parallel,
+                          brute_force=args.brute_force)
 
     if not optimal_ls.is_valid():
         print('\n[WARNING] Learning space is not valid.')

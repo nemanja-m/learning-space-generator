@@ -158,4 +158,4 @@ Parameter _t_ indicates `patience` for fitness improvement and it can be set wit
 
 ## License
 
-This project as available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
+This project is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).

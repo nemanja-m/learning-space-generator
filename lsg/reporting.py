@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 
 class TqdmReporter(BaseReporter):
-    """tqdm based reported.
+    """tqdm based reporter.
 
     Shows tqdm progress bar with info about:
         - total generations
