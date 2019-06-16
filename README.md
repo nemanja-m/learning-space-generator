@@ -1,6 +1,13 @@
 # Learning Space Generator
 
-Search for the optimal [learning space](https://arxiv.org/abs/1511.06757) from exam scores data.
+<p align="center">
+  <img src="./images/ls_0.png" alt="image">
+  <img src="./images/ls_1.png" alt="image">
+  <img src="./images/ls_2.png" alt="image">
+</p>
+
+Search for the optimal [learning space](https://arxiv.org/abs/1511.06757) from response
+patterns obtained from exam scores data.
 
 NEAT algorithm is adapted to search for the best learning space with respect to
 observed response patterns in exam data.
@@ -46,6 +53,9 @@ python -m lsg.run --generations=50 --parallel
 This will start NEAT for 50 generations and parallel genome evaluation.
 
 Run `python -m lsg.run --help` for help about available arguments.
+
+Input is binary matrix of shape `NxM` where `N` is a number of response patterns, and
+`M` is a number of items in domain. Check out [sample dataset](./data/ks_data.csv).
 
 ### Configuration
 
