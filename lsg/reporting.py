@@ -1,5 +1,7 @@
+import io
 from collections import OrderedDict
 
+import matplotlib.pyplot as plt
 from neat.reporting import BaseReporter
 from tqdm import tqdm
 
@@ -43,6 +45,27 @@ class TqdmReporter(BaseReporter):
 
     def close(self):
         self._progress_bar.close()
+
+
+class PlotReporter(BaseReporter):
+
+    def __init__(self):
+        self._figure, self._ax = plt.subplots(1, 1)
+        self._image = None
+        plt.axis('off')
+
+    def post_evaluate(self, config, population, species, best_genome):
+        graph = best_genome.to_pydot_graph()
+        graph_image_bytes = graph.create_png(prog='dot')
+        image_bytes = plt.imread(io.BytesIO(graph_image_bytes))
+
+        if self._image is None:
+            self._image = self._ax.imshow(image_bytes, aspect='auto', animated=True)
+            return
+
+        self._image.set_data(image_bytes)
+        self._figure.canvas.draw_idle()
+        plt.pause(1)
 
 
 class EarlyStoppingReporter(BaseReporter):

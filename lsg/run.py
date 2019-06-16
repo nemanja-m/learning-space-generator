@@ -20,6 +20,7 @@ def run_neat(generations: int,
              responses: List[str],
              early_stopping_patience: int,
              verbose: bool = False,
+             plot_best: bool = False,
              parallel: bool = False,
              brute_force: bool = False) -> genome.LearningSpaceGenome:
     config = neat.Config(genome.LearningSpaceGenome,
@@ -40,6 +41,10 @@ def run_neat(generations: int,
     if verbose:
         tqdm_reporter = reporting.TqdmReporter(total_generations=generations)
         population.add_reporter(tqdm_reporter)
+
+    if plot_best:
+        plot_reporter = reporting.PlotReporter()
+        population.add_reporter(plot_reporter)
 
     if parallel:
         evaluator = evaluation.ParallelEvaluator(responses)
@@ -123,6 +128,8 @@ def parse_command_line_args() -> argparse.Namespace:
     parser.add_argument('-i', '--png',
                         type=str,
                         help='Output path to learning space graph PNG image.')
+    parser.add_argument('-l', '--plot', action='store_true',
+                        help='Show the best learning space during evolution.')
     parser.add_argument('-j', '--json',
                         type=str, default=JSON_GRAPH_FILE,
                         help='Output path to learning space JSON representation.')
@@ -134,7 +141,7 @@ def parse_command_line_args() -> argparse.Namespace:
                         help='Randomly load question columns from responses data file.')
     parser.add_argument('-f', '--brute-force', action='store_true',
                         help='Run brute force algorithm until complete, valid learning'
-                             'space is created')
+                             'space is created.')
     return parser.parse_args()
 
 
@@ -155,6 +162,7 @@ if __name__ == '__main__':
                           responses=response_patterns,
                           early_stopping_patience=args.patience,
                           verbose=not args.silent,
+                          plot_best=args.plot,
                           parallel=args.parallel,
                           brute_force=args.brute_force)
 
