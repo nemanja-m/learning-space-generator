@@ -21,7 +21,7 @@ def run_neat(generations: int,
              verbose: bool = False,
              plot_best: bool = False,
              parallel: bool = False,
-             brute_force: bool = False) -> genome.LearningSpaceGenome:
+             is_greedy: bool = False) -> genome.LearningSpaceGenome:
     config = neat.Config(genome.LearningSpaceGenome,
                          neat.DefaultReproduction,
                          neat.DefaultSpeciesSet,
@@ -31,7 +31,7 @@ def run_neat(generations: int,
     population = neat.Population(config)
 
     early_stopper = reporting.EarlyStoppingReporter(patience=early_stopping_patience,
-                                                    brute_force=brute_force)
+                                                    is_greedy=is_greedy)
     population.add_reporter(early_stopper)
 
     fitness_term_stopper = reporting.FitnessTerminationReporter(threshold=-0.5)
@@ -57,8 +57,8 @@ def run_neat(generations: int,
 
         # Excplicily close tqdm progress bar to fix printing to stdout.
         tqdm_reporter.close()
-        if brute_force:
-            print('\nBrute force algorithm constructed learning space successfully.')
+        if is_greedy:
+            print('\nGreedy algorithm constructed learning space successfully.')
         else:
             print('\nNo fitness improvement '
                   'for {} generations.'.format(early_stopping_patience))
@@ -138,8 +138,8 @@ def parse_command_line_args() -> argparse.Namespace:
                         help='Supress any output to stdout.')
     parser.add_argument('-r', '--randomize-items', action='store_true',
                         help='Randomly load question columns from responses data file.')
-    parser.add_argument('-f', '--brute-force', action='store_true',
-                        help='Run brute force algorithm until complete, valid learning'
+    parser.add_argument('-y', '--greedy', action='store_true',
+                        help='Run algorithm until the first complete, valid learning'
                              'space is created.')
     return parser.parse_args()
 
@@ -152,10 +152,11 @@ if __name__ == '__main__':
     response_patterns = load_response_patterns(knowledge_items=num_items,
                                                randomize=args.randomize_items)
 
-    generations = None if args.brute_force else args.generations
+    # In greedy mode, run NEAT for unlimited generations.
+    generations = None if args.greedy else args.generations
 
-    if args.brute_force:
-        print('\nRunning NEAT until convergence.\n')
+    if args.greedy:
+        print('\nRunning greedy NEAT.\n')
     else:
         print('\nRunning NEAT for {} generations.\n'.format(generations))
 
@@ -166,7 +167,7 @@ if __name__ == '__main__':
                           verbose=not args.silent,
                           plot_best=args.plot,
                           parallel=args.parallel,
-                          brute_force=args.brute_force)
+                          is_greedy=args.greedy)
 
     if not optimal_ls.is_valid():
         print('\n[WARNING] Learning space is not valid.')

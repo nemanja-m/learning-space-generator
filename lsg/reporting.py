@@ -70,13 +70,13 @@ class PlotReporter(BaseReporter):
 
 class EarlyStoppingReporter(BaseReporter):
 
-    def __init__(self, patience: int = 10, brute_force: bool = False):
-        self._is_brute_force = brute_force
+    def __init__(self, patience: int = 10, is_greedy: bool = False):
+        self._is_greedy = is_greedy
         self._patience = patience
         self._prev_best_fitness = -float('inf')
 
     def post_evaluate(self, config, population, species, best_genome):
-        if self._is_brute_force:
+        if self._is_greedy:
             # When running brute force version, algorithm stops as soon as valid
             # learning space is found. Brute force version is typically run with large
             # set of knowledge items.
