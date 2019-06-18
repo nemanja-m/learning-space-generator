@@ -11,7 +11,6 @@ from . import paths, evaluation, reporting, genome
 
 EARLY_STOPPING_PATIENCE = 20
 DEFAULT_GENERATIONS = 15
-MAX_GENERATIONS = 4096
 JSON_GRAPH_FILE = 'graph.json'
 
 
@@ -153,9 +152,12 @@ if __name__ == '__main__':
     response_patterns = load_response_patterns(knowledge_items=num_items,
                                                randomize=args.randomize_items)
 
-    generations = MAX_GENERATIONS if args.brute_force else args.generations
+    generations = None if args.brute_force else args.generations
 
-    print('\nRunning NEAT for {} generations.\n'.format(generations))
+    if args.brute_force:
+        print('\nRunning NEAT until convergence.\n')
+    else:
+        print('\nRunning NEAT for {} generations.\n'.format(generations))
 
     optimal_ls = run_neat(generations=generations,
                           config_filename=args.config,
