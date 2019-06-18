@@ -104,7 +104,6 @@ class LearningSpaceGenome:
         random_node = self._sample_node(distribution=config.mutation_sampling_dist)
         mutated_node = random_node.mutate()
 
-        # There is no new nodes during mutation
         if mutated_node.key in self.nodes:
             return
 

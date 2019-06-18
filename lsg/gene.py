@@ -46,7 +46,15 @@ class KnowledgeStateGene(Gene):
 
     def mutate(self) -> Gene:
         bitarray = self.knowledge_state._bitarray
-        idx = random.choice(range(len(bitarray)))
+
+        # Only flip 0 bits to 1. This shuld speed up convergence.
+        zero_bit_indexes = [bit_idx for bit_idx, bit in enumerate(bitarray) if not bit]
+
+        # No new gene is created when all bits are 1.
+        if not zero_bit_indexes:
+            return self
+
+        idx = random.choice(zero_bit_indexes)
         new_bitarray = [0] * len(bitarray)
         new_bitarray[idx] = 1
         state_mask = KnowledgeState(new_bitarray)
