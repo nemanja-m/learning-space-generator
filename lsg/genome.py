@@ -1,7 +1,8 @@
-import json
 import bisect
 import itertools
+import json
 import random
+import re
 from collections import defaultdict
 from typing import List, Tuple, Union
 
@@ -235,3 +236,29 @@ class LearningSpaceGenome:
     @classmethod
     def parse_config(cls, params: dict) -> LearningSpaceGenomeConfig:
         return LearningSpaceGenomeConfig(**params)
+
+    @classmethod
+    def from_json(cls, path: str, domain_size: int) -> 'LearningSpaceGenome':
+        with open(path, 'r') as fp:
+            learning_space_json = json.load(fp)
+
+        learning_space = cls(key=0)
+
+        nodes = set(learning_space_json.keys()) \
+            | set(itertools.chain.from_iterable(learning_space_json.values()))
+
+        states = [
+            _json_node_to_knowledge_state(node, domain_size)
+            for node in nodes
+        ]
+
+        for state in states:
+            gene = KnowledgeStateGene(state)
+            learning_space.nodes[gene.key] = gene
+
+        return learning_space
+
+
+def _json_node_to_knowledge_state(json_node: str, domain_size: int) -> KnowledgeState:
+    letters = re.sub('[^a-zA-Z]', '', json_node)
+    return KnowledgeState.from_letters(letters, domain_size)

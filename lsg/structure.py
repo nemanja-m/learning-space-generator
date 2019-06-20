@@ -1,10 +1,13 @@
 import string
-from typing import List, Iterable
+from typing import Iterable
 
 from bitarray import bitarray
 
 
-Path = List['KnowledgeState']
+_ASCII_LETTERS_TO_INDEX = {
+    letter: index
+    for index, letter in enumerate(string.ascii_letters)
+}
 
 
 class KnowledgeState:
@@ -69,3 +72,11 @@ class KnowledgeState:
             return self_letters < other_letters  # Compare strings.
 
         return False
+
+    @classmethod
+    def from_letters(cls, letters: str, domain_size: int) -> 'KnowledgeState':
+        bit_array = [0] * domain_size
+        for letter in letters:
+            index = _ASCII_LETTERS_TO_INDEX.get(letter)
+            bit_array[index] = 1
+        return KnowledgeState(bit_array)
