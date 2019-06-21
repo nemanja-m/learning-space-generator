@@ -222,6 +222,10 @@ class LearningSpaceGenome:
             json_dict[source].append(destination)
         return json.dumps(json_dict, indent=2)
 
+    def to_binary_matrix(self) -> np.ndarray:
+        return np.array([node.knowledge_state.to_bitlist()
+                         for node in self.nodes.values()])
+
     def _get_edges(self) -> List[Tuple[str, str]]:
         edges = []
         knowledge_states = self.knowledge_states(sort=True)
@@ -256,6 +260,15 @@ class LearningSpaceGenome:
             gene = KnowledgeStateGene(state)
             learning_space.nodes[gene.key] = gene
 
+        return learning_space
+
+    @classmethod
+    def from_binary_matrix(cls, ls_matrix: np.ndarray) -> 'LearningSpaceGenome':
+        learning_space = cls(0)
+        for bit_array in ls_matrix:
+            knowledge_state = KnowledgeState(bit_array.tolist())
+            node = KnowledgeStateGene(knowledge_state)
+            learning_space.nodes[node.key] = node
         return learning_space
 
 
