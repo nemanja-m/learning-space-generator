@@ -1,10 +1,10 @@
 import argparse
 import configparser
-import csv
 import random
 from typing import List
 
 import neat
+import pandas as pd
 
 from . import paths, evaluation, reporting, genome
 
@@ -87,27 +87,20 @@ def save_learning_space_graph(learning_space, outfile='graph.png') -> None:
 def load_response_patterns(path: str,
                            knowledge_items: int,
                            randomize: bool = True) -> List[str]:
+    df = pd.read_csv(path, header=None)
+    ncols = len(df.columns)
+
+    if randomize:
+        included_cols = list(random.sample(range(ncols), knowledge_items))
+    else:
+        included_cols = list(range(ncols))[:knowledge_items]
+
+    df = df.iloc[:, included_cols]
+
     response_patterns = []
-    with open(path, 'r') as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
-        ncols = len(next(csv_reader))
-
-        # CSV file has no header and we need to go back to the begining of a file.
-        csv_file.seek(0)
-
-        if randomize:
-            included_cols = set(random.sample(range(ncols), knowledge_items))
-        else:
-            included_cols = list(range(ncols))[:knowledge_items]
-
-        for row in csv_reader:
-            filtered_values = [
-                str(value)
-                for col, value in enumerate(row)
-                if col in included_cols
-            ]
-            response = ''.join(filtered_values)
-            response_patterns.append(response)
+    for _, *row in df.itertuples():
+        response = ''.join([str(i) for i in row])
+        response_patterns.append(response)
     return response_patterns
 
 
