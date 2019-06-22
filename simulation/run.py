@@ -1,8 +1,12 @@
+import configparser
+import json
 import os
 import sys
+import tempfile
 from collections import namedtuple, defaultdict, OrderedDict
-from typing import Tuple
+from typing import Tuple, List
 
+from tqdm import tqdm
 import numpy as np
 import pandas as pd
 
@@ -14,6 +18,8 @@ from kst import iita, imp2state
 sys.path.append(os.path.dirname(current_dir))
 from lsg.genome import LearningSpaceGenome
 from lsg.evaluation import get_discrepancy
+from lsg.run import run_neat
+from lsg.paths import DEFAULT_CONFIG_PATH
 
 Condition = namedtuple('Condition', ['items', 'num_states', 'sample_size'])
 
@@ -87,10 +93,32 @@ def simulate_responses_with_blim(sample_size: int,
     return np.array(high_freq_patterns)
 
 
-def fit_iita(response_patterns, items: int) -> LearningSpaceGenome:
+def fit_iita(response_patterns: np.ndarray, items: int) -> LearningSpaceGenome:
     result = iita(response_patterns, v=1)
     states = imp2state(result['implications'], items)
     return LearningSpaceGenome.from_binary_matrix(states)
+
+
+def fit_neat(response_patterns: List[str], items: int) -> LearningSpaceGenome:
+    config = configparser.ConfigParser()
+    config.read(DEFAULT_CONFIG_PATH)
+
+    with tempfile.NamedTemporaryFile(prefix='config_', suffix='.ini', mode='w') as tmp:
+        config.set('LearningSpaceGenome', 'knowledge_items', str(items))
+
+        # Larger knowledge structures require larger population.
+        pop_size = 2048 if items > 10 else 1024
+        config.set('NEAT', 'pop_size', str(pop_size))
+
+        config.write(tmp)
+        tmp.flush()
+
+        learning_space = run_neat(generations=100,
+                                  config_filename=tmp.name,
+                                  responses=response_patterns,
+                                  early_stopping_patience=20,
+                                  parallel=True)
+    return learning_space
 
 
 def save_extracted_ls(ls_matrix: np.ndarray, method: str, items: int, num_states: int):
@@ -115,12 +143,8 @@ def false_positive_rate(true_ls: LearningSpaceGenome,
 
 def evaluate_ls(true_ls: LearningSpaceGenome,
                 extracted_ls: LearningSpaceGenome,
-                response_patterns: np.ndarray) -> Tuple[int, int, float, float]:
-    str_response_patterns = [
-        ''.join([str(i) for i in pattern])
-        for pattern in response_patterns
-    ]
-    discrepancy = get_discrepancy(str_response_patterns, extracted_ls.knowledge_states())
+                response_patterns: List[str]) -> Tuple[int, int, float, float]:
+    discrepancy = get_discrepancy(response_patterns, extracted_ls.knowledge_states())
     tpr = true_positive_rate(true_ls, extracted_ls)
     fpr = false_positive_rate(true_ls, extracted_ls)
     return extracted_ls.size()[0], discrepancy, tpr, fpr
@@ -130,7 +154,7 @@ def run_simulation():
     results = defaultdict(list)
 
     ls_cache = {}
-    for items, num_states, sample_size in _CONDITIONS:
+    for items, num_states, sample_size in tqdm(_CONDITIONS):
         key = (items, num_states)
         if key in ls_cache:
             (true_ls_matrix, betas, etas, state_probs) = ls_cache.get(key)
@@ -146,19 +170,43 @@ def run_simulation():
             etas=etas,
             state_probs=state_probs)
 
+        str_response_patterns = [
+            ''.join([str(i) for i in pattern])
+            for pattern in response_patterns
+        ]
+
+        true_ls = LearningSpaceGenome.from_binary_matrix(true_ls_matrix)
+
         iita_ls = fit_iita(response_patterns, items=items)
         save_extracted_ls(ls_matrix=iita_ls.to_binary_matrix(),
                           method='iita',
                           items=items,
                           num_states=num_states)
 
-        true_ls = LearningSpaceGenome.from_binary_matrix(true_ls_matrix)
-        size, discrepancy, tpr, fpr = evaluate_ls(true_ls, iita_ls, response_patterns)
+        size, discrepancy, tpr, fpr = evaluate_ls(true_ls, iita_ls, str_response_patterns)
         results['IITA'].append(OrderedDict([
             ('items', items),
             ('num_states', num_states),
             ('sample_size', sample_size),
             ('size', size),
+            ('learning_space', iita_ls.is_valid()),
+            ('discrepancy', discrepancy),
+            ('tpr', tpr),
+            ('fpr', fpr)
+        ]))
+
+        neat_ls = fit_neat(str_response_patterns, items=items)
+        save_extracted_ls(ls_matrix=neat_ls.to_binary_matrix(),
+                          method='neat',
+                          items=items,
+                          num_states=num_states)
+        size, discrepancy, tpr, fpr = evaluate_ls(true_ls, neat_ls, str_response_patterns)
+        results['NEAT'].append(OrderedDict([
+            ('items', items),
+            ('num_states', num_states),
+            ('sample_size', sample_size),
+            ('size', size),
+            ('learning_space', neat_ls.is_valid()),
             ('discrepancy', discrepancy),
             ('tpr', tpr),
             ('fpr', fpr)
@@ -167,4 +215,13 @@ def run_simulation():
 
 
 if __name__ == '__main__':
+    print('\nRunning knowledge structure extraction simulation '
+          'with IITA and NEAT algorithms\n')
+
     results = run_simulation()
+
+    filename = 'simulation_results.json'
+    with open(filename, 'w') as fp:
+        json.dump(results, fp, indent=2)
+
+    print('\nSimulation results saved to {}'.format(filename))
