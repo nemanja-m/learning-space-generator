@@ -23,6 +23,9 @@ class KnowledgeState:
     def to_bitstring(self) -> str:
         return self._bitarray.to01()
 
+    def to_bitlist(self) -> list:
+        return self._bitarray.tolist()
+
     def __hash__(self):
         return self._bitarray.tobytes().__hash__()
 

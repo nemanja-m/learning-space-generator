@@ -14,8 +14,9 @@ Partitions = Dict[KnowledgeState, List[str]]
 
 class Evaluator(ABC):
 
-    def __init__(self, response_patterns: List[str]):
+    def __init__(self, response_patterns: List[str], node_size_penalty: float = 1.0):
         self.response_patterns = response_patterns
+        self.node_size_penalty = node_size_penalty
 
     @abstractmethod
     def evaluate(self,
@@ -51,7 +52,7 @@ class ParallelEvaluator(Evaluator):
         for job, (_, genome) in zip(jobs, genomes):
             num_nodes, _ = genome.size()
             discrepancy = job.get()
-            genome.fitness = -(discrepancy + num_nodes)
+            genome.fitness = -(discrepancy + num_nodes * self.node_size_penalty)
 
 
 class SerialEvaluator(Evaluator):
@@ -69,7 +70,7 @@ class SerialEvaluator(Evaluator):
                                           knowledge_states=genome.knowledge_states(),
                                           cache=self._cache)
             # Fitness is negative because objective is to maximize fitness.
-            genome.fitness = -(discrepancy + num_nodes)
+            genome.fitness = -(discrepancy + num_nodes * self.node_size_penalty)
 
 
 def get_discrepancy(response_patterns: List[str],

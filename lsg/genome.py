@@ -187,6 +187,9 @@ class LearningSpaceGenome:
         states_gen = (node.knowledge_state for node in self.nodes.values())
         return list(sorted(states_gen) if sort else states_gen)
 
+    def contains_state(self, state: KnowledgeState) -> bool:
+        return state.to_bitstring() in self.nodes
+
     def _add_node(self, knowledge_state: KnowledgeState) -> None:
         node = KnowledgeStateGene(state=knowledge_state)
         self.nodes[node.key] = node
