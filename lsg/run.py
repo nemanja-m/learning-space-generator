@@ -80,9 +80,11 @@ def save_learning_space_graph(learning_space, outfile='graph.png') -> None:
         fp.write(graph_image_bytes)
 
 
-def load_response_patterns(knowledge_items: int, randomize: bool = True) -> List[str]:
+def load_response_patterns(path: str,
+                           knowledge_items: int,
+                           randomize: bool = True) -> List[str]:
     response_patterns = []
-    with open(paths.RESPONSES_PATH, 'r') as csv_file:
+    with open(path, 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         ncols = len(next(csv_reader))
 
@@ -117,6 +119,9 @@ def parse_command_line_args() -> argparse.Namespace:
     parser.add_argument('-c', '--config',
                         type=str, default=paths.DEFAULT_CONFIG_PATH,
                         help='Path to config file.')
+    parser.add_argument('-d', '--data-path',
+                        type=str, default=paths.RESPONSES_PATH,
+                        help='Path to the CSV file with response patterns.')
     parser.add_argument('-g', '--generations',
                         type=int, default=DEFAULT_GENERATIONS,
                         help='Number of generations.')
@@ -149,7 +154,8 @@ if __name__ == '__main__':
     config = parse_config_file(config_filename=args.config)
 
     num_items = int(config['knowledge_items'])
-    response_patterns = load_response_patterns(knowledge_items=num_items,
+    response_patterns = load_response_patterns(path=args.data_path,
+                                               knowledge_items=num_items,
                                                randomize=args.randomize_items)
 
     # In greedy mode, run NEAT for unlimited generations.

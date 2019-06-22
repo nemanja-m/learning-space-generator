@@ -108,3 +108,9 @@ ENV/
 
 # generated JSON graph files
 *.json
+
+# KST package for simulation
+simulation/kst/
+
+# extracted learning structures
+simulation/data/extracted/
