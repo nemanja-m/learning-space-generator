@@ -55,8 +55,10 @@ def run_neat(generations: int,
     except reporting.EarlyStoppingException as exception:
         optimal_ls = exception.best_genome
 
-        # Excplicily close tqdm progress bar to fix printing to stdout.
-        tqdm_reporter.close()
+        if verbose:
+            # Excplicily close tqdm progress bar to fix printing to stdout.
+            tqdm_reporter.close()
+
         if is_greedy:
             print('\nGreedy algorithm constructed learning space successfully.')
         else:
@@ -65,8 +67,10 @@ def run_neat(generations: int,
     except reporting.TerminationThresholdReachedException as exception:
         optimal_ls = exception.best_genome
 
-        # Excplicily close tqdm progress bar to fix printing to stdout.
-        tqdm_reporter.close()
+        if verbose:
+            # Excplicily close tqdm progress bar to fix printing to stdout.
+            tqdm_reporter.close()
+
         print('\nTermination threshold reached. '
               'Found genome with {} discrepancy'.format(optimal_ls.discrepancy()))
 
