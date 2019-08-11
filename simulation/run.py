@@ -61,7 +61,7 @@ def simulate_responses_with_blim(sample_size: int,
     correct_answer_probs = np.multiply(true_ks, 1 - betas) \
         + np.multiply(1 - true_ks, etas)
 
-    adjusted_sample_size = int(2.0 * sample_size)
+    adjusted_sample_size = int(5 * sample_size)
 
     seq_len = list(range(len(state_probs)))
     states_id = np.random.choice(seq_len,

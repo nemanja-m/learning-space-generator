@@ -16,7 +16,7 @@ class Evaluator(ABC):
 
     def __init__(self,
                  response_patterns: List[str],
-                 node_size_penalty: float = 10.0,
+                 node_size_penalty: float = 25.6,
                  valid_learning_space_weight: float = 256.0):
         self.response_patterns = response_patterns
         self.node_size_penalty = node_size_penalty
