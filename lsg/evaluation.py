@@ -14,15 +14,29 @@ Partitions = Dict[KnowledgeState, List[str]]
 
 class Evaluator(ABC):
 
-    def __init__(self, response_patterns: List[str], node_size_penalty: float = 1.0):
+    def __init__(self,
+                 response_patterns: List[str],
+                 node_size_penalty: float = 10.0,
+                 valid_learning_space_weight: float = 256.0):
         self.response_patterns = response_patterns
         self.node_size_penalty = node_size_penalty
+        self.valid_learning_space_weight = valid_learning_space_weight
 
     @abstractmethod
     def evaluate(self,
                  genomes: List[Tuple[int, LearningSpaceGenome]],
                  config: LearningSpaceGenomeConfig = None) -> None:
         pass
+
+    def _set_fitness(self, genome, discrepancy):
+        num_nodes, _ = genome.size()
+        size_fitness = num_nodes * self.node_size_penalty
+        valid_ls_fitness = int(genome.is_valid()) * self.valid_learning_space_weight
+
+        # Larger knowledge structures are penalized, while valid learning spaces
+        # have better fitness. Fitness is negative because objective is to
+        # maximize fitness.
+        genome.fitness = -(discrepancy + size_fitness) + valid_ls_fitness
 
 
 class ParallelEvaluator(Evaluator):
@@ -50,9 +64,8 @@ class ParallelEvaluator(Evaluator):
         ]
 
         for job, (_, genome) in zip(jobs, genomes):
-            num_nodes, _ = genome.size()
             discrepancy = job.get()
-            genome.fitness = -(discrepancy + num_nodes * self.node_size_penalty)
+            self._set_fitness(genome, discrepancy)
 
 
 class SerialEvaluator(Evaluator):
@@ -65,12 +78,10 @@ class SerialEvaluator(Evaluator):
                  genomes: List[Tuple[int, LearningSpaceGenome]],
                  config: LearningSpaceGenomeConfig = None) -> None:
         for _, genome in genomes:
-            num_nodes, _ = genome.size()
             discrepancy = get_discrepancy(response_patterns=self.response_patterns,
                                           knowledge_states=genome.knowledge_states(),
                                           cache=self._cache)
-            # Fitness is negative because objective is to maximize fitness.
-            genome.fitness = -(discrepancy + num_nodes * self.node_size_penalty)
+            self._set_fitness(genome, discrepancy)
 
 
 def get_discrepancy(response_patterns: List[str],
