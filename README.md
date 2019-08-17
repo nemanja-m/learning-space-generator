@@ -10,7 +10,9 @@ Search for the optimal [learning space](https://arxiv.org/abs/1511.06757) from r
 patterns obtained from exam scores data.
 
 NEAT algorithm is adapted to search for the best learning space with respect to
-observed response patterns in exam data.
+observed response patterns in exam data. Proposed algorithm is evaluated and
+its performance is compared with IITA algorithm. Reconstruction simulation
+results can be found [here](./simulation).
 
 ## Installation
 
