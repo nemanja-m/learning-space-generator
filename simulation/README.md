@@ -35,6 +35,8 @@ https://github.com/milansegedinac/kst.git`
 Run simulation with `python -m run` inside `simulation/` directory. Results will be
 outputted as JSON files for each simulation iteration (10 total.)
 
+Generate reports with `python generate_reports.py`.
+
 ## Results
 
 Below figure displays NEAT and IITA performance on described metrics. NEAT outperforms

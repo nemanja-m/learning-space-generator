@@ -114,3 +114,6 @@ simulation/kst/
 
 # extracted learning structures
 simulation/data/extracted/
+
+# generated reports
+simulation/reports/*
