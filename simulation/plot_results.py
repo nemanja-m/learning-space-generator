@@ -29,8 +29,8 @@ def extract_metric(simulation_results, metric_name):
 
 
 def plot_simulaion_results(simulatio_results):
-    fig, axes = plt.subplots(3, sharex=True)
-    fig.set_size_inches(7, 8)
+    fig, axes = plt.subplots(4, sharex=True)
+    fig.set_size_inches(7, 9)
 
     (neat_tprs_mean,
      neat_tprs_std,
@@ -70,6 +70,22 @@ def plot_simulaion_results(simulatio_results):
     axes[1].legend()
     axes[1].set_ylim([0, 1])
 
+    (neat_disc_mean,
+     neat_disc_std,
+     iita_disc_mean,
+     iita_disc_std) = extract_metric(simulatio_results, 'discrepancy')
+
+    axes[2].bar(indices - width / 2, neat_disc_mean,
+                width, label='NEAT', yerr=neat_disc_std)
+    axes[2].bar(indices + width / 2, iita_disc_mean,
+                width, label='IITA', yerr=iita_disc_std)
+
+    axes[2].set_ylabel('Discrepancy')
+    axes[2].set_xticks(indices)
+    axes[2].set_xticklabels(('10/30/250', '10/30/500', '10/60/250',
+                             '10/60/500', '15/100/1000'))
+    axes[2].legend()
+
     (neat_size_mean,
      neat_size_std,
      iita_size_mean,
@@ -77,16 +93,16 @@ def plot_simulaion_results(simulatio_results):
     (num_states, *_) = extract_metric(simulatio_results, 'num_states')
 
     width = 0.25
-    axes[2].bar(indices - width, neat_size_mean, width, label='NEAT', yerr=neat_size_std)
-    axes[2].bar(indices, iita_size_mean, width, label='IITA', yerr=iita_size_std)
-    axes[2].bar(indices + width, num_states, width, label='True')
+    axes[3].bar(indices - width, num_states, width, label='True KS')
+    axes[3].bar(indices, neat_size_mean, width, label='NEAT', yerr=neat_size_std)
+    axes[3].bar(indices + width, iita_size_mean, width, label='IITA', yerr=iita_size_std)
 
-    axes[2].set_ylabel('Number of states')
-    axes[2].set_xlabel('Items / True KS Size / Sample Size')
-    axes[2].set_xticks(indices)
-    axes[2].set_xticklabels(('10/30/250', '10/30/500', '10/60/250',
+    axes[3].set_ylabel('Size')
+    axes[3].set_xlabel('Condition |Q|, |K|, N')
+    axes[3].set_xticks(indices)
+    axes[3].set_xticklabels(('10/30/250', '10/30/500', '10/60/250',
                              '10/60/500', '15/100/1000'))
-    axes[2].legend()
+    axes[3].legend()
     fig.tight_layout()
     plt.show()
 
