@@ -1,14 +1,18 @@
+import argparse
 import configparser
 import json
 import os
 import sys
 import tempfile
+import warnings
 from collections import namedtuple, defaultdict, OrderedDict
 from typing import Tuple, List
 
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
+
+warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 # This hack is necessary to load KST package and IITA.
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -107,13 +111,13 @@ def fit_neat(response_patterns: List[str], items: int) -> LearningSpaceGenome:
         config.set('LearningSpaceGenome', 'knowledge_items', str(items))
 
         # Larger knowledge structures require larger population.
-        pop_size = 2048 if items > 10 else 1024
+        pop_size = 10  # 3072
         config.set('NEAT', 'pop_size', str(pop_size))
 
         config.write(tmp)
         tmp.flush()
 
-        learning_space = run_neat(generations=100,
+        learning_space = run_neat(generations=1,
                                   config_filename=tmp.name,
                                   responses=response_patterns,
                                   early_stopping_patience=20,
@@ -154,7 +158,7 @@ def run_simulation():
     results = defaultdict(list)
 
     ls_cache = {}
-    for items, num_states, sample_size in tqdm(_CONDITIONS):
+    for items, num_states, sample_size in _CONDITIONS:
         key = (items, num_states)
         if key in ls_cache:
             (true_ls_matrix, betas, etas, state_probs) = ls_cache.get(key)
@@ -214,14 +218,30 @@ def run_simulation():
     return results
 
 
+def parse_args():
+    parser = argparse.ArgumentParser('Run learning space reconstrucion simulation')
+    parser.add_argument('-i', '--iterations', type=int, default=10,
+                        help='Number of simulation iterations')
+    parser.add_argument('-o', '--output', type=str, default='results/',
+                        help='Name of output dir where simulation results will be saved')
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
+    args = parse_args()
+
     print('\nRunning knowledge structure extraction simulation '
           'with IITA and NEAT algorithms\n')
 
-    results = run_simulation()
+    if not os.path.exists(args.output):
+        os.mkdir(args.output)
+        print('Output dir \'{}\' created\n'.format(args.output))
 
-    filename = 'simulation_results.json'
-    with open(filename, 'w') as fp:
-        json.dump(results, fp, indent=2)
+    for i in tqdm(range(args.iterations)):
+        results = run_simulation()
 
-    print('\nSimulation results saved to {}'.format(filename))
+        filename = os.path.join(args.output, 'simulation_{}.json'.format(i))
+        with open(filename, 'w') as fp:
+            json.dump(results, fp, indent=2)
+
+    print('\nSimulation results saved to {}'.format(args.output))
